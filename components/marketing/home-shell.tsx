@@ -30,24 +30,24 @@ const productSignals = [
   "Realtime-ready room flow for voting and finalization",
 ];
 
-const buildTracks = [
+const stateCards = [
   {
-    title: "Repo baseline",
-    status: "Active now",
+    title: "Live room flow",
+    status: "Ready now",
     copy:
-      "Boundary root Next.js vs Lovable reference sedang dirapikan supaya migrasi jalan di production app yang benar.",
+      "Create room, join room, location sharing, fairness summary, voting, dan final decision sekarang sudah hidup di root app.",
   },
   {
-    title: "Shared contracts",
-    status: "Next up",
+    title: "Venue boundary",
+    status: "Protected",
     copy:
-      "Room, member, location, midpoint, venue, dan vote akan dipindahkan ke kontrak TypeScript yang stabil di root app.",
+      "Venue retrieval sekarang lewat server boundary dengan cache, rate limiting, cancellation, dan structured logs.",
   },
   {
-    title: "Feature migration",
-    status: "After foundation",
+    title: "Cutover blockers",
+    status: "Still open",
     copy:
-      "Map, midpoint, venue search, voting, dan finalisasi akan dipindahkan bertahap ke App Router dengan server boundary yang jelas.",
+      "Durable persistence, parity clean-up, dan final Vercel rollout masih jadi langkah terakhir sebelum app ini bisa dianggap benar-benar production-ready.",
   },
 ];
 
@@ -70,7 +70,7 @@ export function HomeShell() {
             </div>
           </div>
           <p className="hidden font-mono text-[11px] uppercase tracking-[0.24em] text-muted md:block">
-            Next.js migration in progress
+            Live room flow ready
           </p>
         </div>
 
@@ -101,10 +101,10 @@ export function HomeShell() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
-                href="#build-track"
+                href="#state-of-app"
                 className="inline-flex items-center justify-center rounded-full border border-line bg-white/60 px-6 py-3 text-sm font-semibold text-foreground transition-transform duration-200 hover:-translate-y-0.5"
               >
-                Lihat migration track
+                Lihat app status
               </Link>
             </div>
 
@@ -252,26 +252,26 @@ export function HomeShell() {
       </section>
 
       <section
-        id="build-track"
+        id="state-of-app"
         className="mx-auto max-w-7xl px-6 pb-16 pt-4 md:px-10 md:pb-20"
       >
         <div className="grid gap-6 lg:grid-cols-[0.86fr_1.14fr]">
           <div className="rounded-[2rem] border border-line bg-foreground p-7 text-background shadow-[0_20px_60px_rgba(31,27,23,0.16)]">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-background/70">
-              Build focus
+              State of app
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em]">
-              Production-ready by design, bukan retrofit.
+              Room planner ini sudah jadi produk kerja, bukan shell migrasi.
             </h2>
             <p className="mt-4 max-w-lg text-sm leading-7 text-background/75">
-              Migrasi ini sengaja diarahkan ke App Router, server boundary yang
-              jelas, dan deployment Vercel yang bersih. Prototype Lovable tetap
-              berguna, tapi sekarang hanya jadi referensi perilaku dan UI.
+              Root app sekarang memegang flow utama Hangout end-to-end. Prototype
+              Lovable masih berguna sebagai bahan parity review, tapi bukan lagi
+              tempat development utama.
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {buildTracks.map((track) => (
+            {stateCards.map((track) => (
               <article
                 key={track.title}
                 className="rounded-[1.75rem] border border-line bg-white/72 p-5 shadow-[0_18px_45px_rgba(31,27,23,0.08)]"
