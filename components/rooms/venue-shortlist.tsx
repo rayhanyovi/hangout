@@ -47,13 +47,13 @@ export function VenueShortlist({
   const filteredVenues = filterRankedVenues(venues, activeCategories);
 
   return (
-    <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
+    <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
             Venue shortlist
           </p>
-          <p className="mt-2 text-sm leading-7 text-muted">
+          <p className="mt-2 text-sm leading-7 text-foreground">
             Venue candidates are now retrieved from the server search boundary
             and ranked by distance, category fit, and matched tags. Radius and
             category controls below now refresh the live shortlist.
@@ -74,8 +74,8 @@ export function VenueShortlist({
               onClick={() => onSelectRadius(option)}
               className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                 radiusM === option
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-line bg-white/80 text-muted"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-line bg-card text-muted-foreground"
               }`}
             >
               {option >= 1000 ? `${option / 1000} km` : `${option} m`}
@@ -85,7 +85,7 @@ export function VenueShortlist({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Live categories
         </div>
@@ -100,8 +100,8 @@ export function VenueShortlist({
               onClick={() => onToggleCategory(category)}
               className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                 active
-                  ? "border-coral bg-coral/12 text-coral"
-                  : "border-line bg-white/80 text-muted"
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-line bg-card text-muted-foreground"
               }`}
             >
               {CATEGORY_LABELS[category]}
@@ -111,27 +111,27 @@ export function VenueShortlist({
       </div>
 
       {errorMessage ? (
-        <p className="mt-4 rounded-[1.2rem] border border-coral/30 bg-coral/8 px-4 py-3 text-sm text-coral">
+        <p className="mt-4 rounded-2xl border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </p>
       ) : null}
 
       {!hasMidpoint ? (
-        <p className="mt-5 text-sm leading-7 text-muted">
+        <p className="mt-5 text-sm leading-7 text-foreground">
           Venue retrieval starts after at least two members have shared a
           location and the midpoint is available.
         </p>
       ) : null}
 
       {hasMidpoint && activeCategories.length === 0 ? (
-        <p className="mt-5 text-sm leading-7 text-muted">
+        <p className="mt-5 text-sm leading-7 text-foreground">
           Tidak ada kategori spesifik yang dipilih, jadi shortlist sekarang
           mencari semua kategori venue yang tersedia.
         </p>
       ) : null}
 
       {hasMidpoint && !isLoading && filteredVenues.length === 0 && !errorMessage ? (
-        <p className="mt-5 text-sm leading-7 text-muted">
+        <p className="mt-5 text-sm leading-7 text-foreground">
           No venues matched the current category filters for this room.
         </p>
       ) : null}
@@ -141,10 +141,10 @@ export function VenueShortlist({
           <div
             key={venue.venueId}
             data-testid={`venue-card-${venue.venueId}`}
-            className={`rounded-[1.3rem] border p-4 transition ${
+            className={`rounded-2xl border p-4 transition ${
               selectedVenueId === venue.venueId
-                ? "border-foreground bg-white shadow-[0_14px_34px_rgba(31,27,23,0.12)]"
-                : "border-line bg-white/80"
+                ? "border-primary bg-card shadow-lg"
+                : "border-line bg-card"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
@@ -161,13 +161,13 @@ export function VenueShortlist({
                     {CATEGORY_LABELS[venue.category]}
                   </span>
                   {selectedVenueId === venue.venueId ? (
-                    <span className="rounded-full bg-foreground px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                    <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
                       focused
                     </span>
                   ) : null}
                 </div>
                 {venue.address ? (
-                  <p className="mt-2 flex items-center gap-1 text-xs text-muted">
+                  <p className="mt-2 flex items-center gap-1 text-xs text-foreground">
                     <MapPin className="h-3.5 w-3.5" />
                     <span className="truncate">{venue.address}</span>
                   </p>
@@ -176,11 +176,11 @@ export function VenueShortlist({
                   <span className="rounded-full bg-surface px-3 py-1 text-[11px] font-semibold text-foreground">
                     {venue.distanceToCenterM} m from midpoint
                   </span>
-                  <span className="rounded-full bg-teal/12 px-3 py-1 text-[11px] font-semibold text-teal">
+                  <span className="rounded-full bg-success-soft px-3 py-1 text-[11px] font-semibold text-success-foreground">
                     Match score {venue.score.toFixed(1)}
                   </span>
                   {venue.rating ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sun/25 px-3 py-1 text-[11px] font-semibold text-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-foreground">
                       <Star className="h-3 w-3" />
                       {venue.rating}
                     </span>
@@ -191,7 +191,7 @@ export function VenueShortlist({
                     {venue.matchedTags.map((tag) => (
                       <span
                         key={`${venue.venueId}-${tag}`}
-                        className="rounded-full border border-line bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted"
+                        className="rounded-full border border-line bg-card px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                       >
                         {tag}
                       </span>

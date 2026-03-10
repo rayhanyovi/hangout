@@ -17,7 +17,7 @@ const DEFAULT_CENTER: Coordinate = {
 };
 
 const pickedLocationIcon = new L.DivIcon({
-  html: `<div style="background:#1d7c73;width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:11px;border:3px solid white;box-shadow:0 10px 24px rgba(31,27,23,0.18);">P</div>`,
+  html: `<div style="background:var(--primary);width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--primary-foreground);font-weight:700;font-size:11px;border:3px solid var(--card);box-shadow:var(--shadow-lg);">P</div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   className: "",
@@ -77,13 +77,13 @@ export function LocationPickerMapClient({
 
   return (
     <div className="space-y-3">
-      <div className="pointer-events-none rounded-[1rem] border border-line bg-white/78 px-3 py-2 text-xs leading-6 text-muted">
+      <div className="pointer-events-none rounded-xl border border-line bg-card px-3 py-2 text-xs leading-6 text-muted-foreground">
         Click the map to drop a pin. Coordinate fields below will update
         automatically before you save the location.
       </div>
 
       <div
-        className="overflow-hidden rounded-[1.25rem] border border-line shadow-[0_16px_36px_rgba(31,27,23,0.12)]"
+        className="overflow-hidden rounded-2xl border border-line shadow-lg"
         data-testid={testId}
       >
         <MapContainer

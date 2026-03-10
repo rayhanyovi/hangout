@@ -6,9 +6,9 @@ export default function NewRoomPage() {
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4 py-3 shadow-[0_12px_40px_rgba(31,27,23,0.08)] backdrop-blur">
+        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4 py-3 shadow-lg backdrop-blur">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-coral text-sm font-bold text-white">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
               H
             </span>
             <div>
@@ -20,7 +20,7 @@ export default function NewRoomPage() {
           </div>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back
@@ -28,19 +28,19 @@ export default function NewRoomPage() {
         </div>
 
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-5 rounded-[2rem] border border-line bg-surface p-7 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+          <div className="space-y-5 rounded-3xl border border-line bg-surface p-7 shadow-xl">
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
               Route: /rooms/new
             </p>
             <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
               Host setup dimulai dari sini.
             </h1>
-            <p className="text-base leading-8 text-muted md:text-lg">
+            <p className="text-base leading-8 text-foreground md:text-lg">
               Untuk bikin room baru sekarang cukup isi nama acara dan nama host
               dulu. Pengaturan seperti transport mode, radius, dan preferensi
               venue bisa dilanjutkan setelah masuk ke room.
             </p>
-            <div className="rounded-[1.5rem] border border-line bg-white/80 p-5">
+            <div className="rounded-2xl border border-line bg-card p-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                 Current phase
               </p>

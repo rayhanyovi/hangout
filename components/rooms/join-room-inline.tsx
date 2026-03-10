@@ -96,13 +96,13 @@ export function JoinRoomInline({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.8rem] border border-line bg-white/72 p-5 shadow-[0_18px_45px_rgba(31,27,23,0.08)]"
+      className="rounded-3xl border border-line bg-card p-5 shadow-lg"
     >
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Search className="h-4 w-4" />
         {compact ? "Join this room" : "Join existing room"}
       </div>
-      <p className="mt-2 text-sm leading-6 text-muted">
+      <p className="mt-2 text-sm leading-6 text-foreground">
         {compact
           ? "Masuk sebagai member untuk share lokasi dari device kamu sendiri."
           : "Punya room code? Masuk langsung ke room yang sama untuk lanjut koordinasi."}
@@ -120,7 +120,7 @@ export function JoinRoomInline({
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="ABCD12"
-              className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-semibold tracking-[0.2em] text-foreground outline-none transition focus:border-coral"
+              className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm font-semibold tracking-[0.2em] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
         ) : null}
@@ -132,7 +132,7 @@ export function JoinRoomInline({
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder="Nama kamu"
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+            className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </label>
         <button
@@ -140,18 +140,18 @@ export function JoinRoomInline({
           disabled={isPending || isSubmitting}
           aria-label={isPending || isSubmitting ? "Opening room" : "Join room"}
           data-testid="join-room-submit"
-          className="inline-flex items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending || isSubmitting ? "Opening..." : <ArrowRight className="h-4 w-4" />}
         </button>
       </div>
 
       {compact ? (
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-xs text-foreground">
           Join code <span className="font-mono text-foreground">{initialJoinCode}</span> akan dipakai otomatis.
         </p>
       ) : (
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-xs text-foreground">
           Join flow sekarang memakai room API nyata dan langsung masuk ke room yang sama.
         </p>
       )}
@@ -177,7 +177,7 @@ export function JoinRoomInline({
       ) : null}
 
       {error ? (
-        <p className="mt-3 text-sm font-medium text-coral">{error}</p>
+        <p className="mt-3 text-sm font-medium text-destructive">{error}</p>
       ) : null}
     </form>
   );

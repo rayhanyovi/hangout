@@ -38,13 +38,13 @@ export function RoomVotingPanel({
       : null;
 
   return (
-    <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
+    <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
             Voting
           </p>
-          <p className="mt-2 text-sm leading-7 text-muted">
+          <p className="mt-2 text-sm leading-7 text-foreground">
             Member vote selalu mengarah ke venue yang sedang dipilih dari
             shortlist. Host bisa finalize setelah kandidat pemenang jelas.
           </p>
@@ -53,13 +53,13 @@ export function RoomVotingPanel({
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+        <div className="rounded-2xl border border-line bg-card p-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
             Total votes
           </p>
           <p className="mt-2 text-lg font-semibold text-foreground">{votes.length}</p>
         </div>
-        <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+        <div className="rounded-2xl border border-line bg-card p-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
             Your vote
           </p>
@@ -70,7 +70,7 @@ export function RoomVotingPanel({
               : "Not voted yet"}
           </p>
         </div>
-        <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+        <div className="rounded-2xl border border-line bg-card p-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
             Finalized
           </p>
@@ -84,17 +84,17 @@ export function RoomVotingPanel({
       </div>
 
       {errorMessage ? (
-        <p className="mt-4 rounded-[1.2rem] border border-coral/30 bg-coral/8 px-4 py-3 text-sm text-coral">
+        <p className="mt-4 rounded-2xl border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </p>
       ) : null}
 
       {venues.length === 0 ? (
-        <div className="mt-5 rounded-[1.4rem] border border-line bg-white/80 p-4">
+        <div className="mt-5 rounded-2xl border border-line bg-card p-4">
           <p className="text-sm font-semibold text-foreground">
             Voting opens after the shortlist is ready.
           </p>
-          <p className="mt-2 text-sm leading-7 text-muted">
+          <p className="mt-2 text-sm leading-7 text-foreground">
             Tunggu venue provider selesai atau bagikan lokasi member tambahan
             dulu supaya room punya kandidat yang bisa dipilih.
           </p>
@@ -103,7 +103,7 @@ export function RoomVotingPanel({
 
       {venues.length > 0 ? (
         <>
-          <div className="mt-5 rounded-[1.4rem] border border-line bg-white/80 p-4">
+          <div className="mt-5 rounded-2xl border border-line bg-card p-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
               Selected venue
             </p>
@@ -115,7 +115,7 @@ export function RoomVotingPanel({
                 type="button"
                 onClick={() => selectedVenueId && onVote(selectedVenueId)}
                 disabled={!currentMemberId || !selectedVenueId || isSubmitting || finalizedVenueId !== null}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Vote className="h-4 w-4" />
                 Vote for selected venue
@@ -129,7 +129,7 @@ export function RoomVotingPanel({
                   isSubmitting ||
                   finalizedVenueId !== null
                 }
-                className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Crown className="h-4 w-4" />
                 Host finalize
@@ -146,24 +146,24 @@ export function RoomVotingPanel({
               return (
                 <div
                   key={venue.venueId}
-                  className={`rounded-[1.3rem] border p-4 ${
-                    isFinalized ? "border-foreground bg-white" : "border-line bg-white/80"
+                  className={`rounded-2xl border p-4 ${
+                    isFinalized ? "border-primary bg-card" : "border-line bg-card"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{venue.name}</p>
-                      <p className="mt-1 text-xs text-muted">{venueVotes} vote(s)</p>
+                      <p className="mt-1 text-xs text-foreground">{venueVotes} vote(s)</p>
                     </div>
                     <div className="flex gap-2">
                       {isCurrentVote ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-teal/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-success-foreground">
                           <CheckCircle2 className="h-3 w-3" />
                           your vote
                         </span>
                       ) : null}
                       {isFinalized ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
                           <Crown className="h-3 w-3" />
                           finalized
                         </span>

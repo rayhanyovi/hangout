@@ -191,7 +191,7 @@ export function RoomMemberManager({
   };
 
   return (
-    <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
+    <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
       <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-muted" />
         <h2 className="text-lg font-semibold text-foreground">
@@ -199,7 +199,7 @@ export function RoomMemberManager({
         </h2>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-[1.4rem] border border-line bg-white/78 p-4 text-sm text-muted sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-card p-4 text-sm text-muted-foreground sm:grid-cols-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.16em]">
             Total members
@@ -220,24 +220,24 @@ export function RoomMemberManager({
         </div>
       </div>
 
-      <div className="mt-5 rounded-[1.4rem] border border-line bg-white/82 p-4 text-sm leading-7 text-muted">
+      <div className="mt-5 rounded-2xl border border-line bg-card p-4 text-sm leading-7 text-muted-foreground">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
           Privacy mode
         </p>
         <p className="mt-2 text-sm font-semibold capitalize text-foreground">
           {privacyMode} · {privacyRule.locationPrecisionDecimals} decimals
         </p>
-        <p className="mt-2">{privacyRule.description}</p>
+        <p className="mt-2 text-foreground">{privacyRule.description}</p>
       </div>
 
-      <div className="mt-5 rounded-[1.4rem] border border-dashed border-line bg-white/80 p-4">
+      <div className="mt-5 rounded-2xl border border-dashed border-line bg-card p-4">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
           Invite route
         </p>
         <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
           {inviteLink}
         </p>
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-xs text-foreground">
           {isLiveMode
             ? "Roster bertambah saat orang join lewat link atau join code ini."
             : "Preview mode masih mengizinkan host menambah slot member secara lokal."}
@@ -260,26 +260,26 @@ export function RoomMemberManager({
                 }
               }}
               placeholder="Type a member name"
-              className="w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+              className="w-full rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
           <button
             type="button"
             onClick={handleAddMember}
-            className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
           >
             <Plus className="h-4 w-4" />
             Add
           </button>
         </div>
       ) : (
-        <p className="mt-5 text-sm leading-7 text-muted">
+        <p className="mt-5 text-sm leading-7 text-foreground">
           Live room mode membatasi update lokasi ke member yang sedang masuk
           dari device ini.
         </p>
       )}
 
-      {error ? <p className="mt-3 text-sm font-medium text-coral">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm font-medium text-destructive">{error}</p> : null}
 
       <div className="mt-5 space-y-3">
         {members.map((member) => {
@@ -291,7 +291,7 @@ export function RoomMemberManager({
             <div
               key={member.id}
               data-testid={`member-card-${member.id}`}
-              className="rounded-[1.4rem] border border-line bg-white/78 p-4"
+              className="rounded-2xl border border-line bg-card p-4"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -303,14 +303,14 @@ export function RoomMemberManager({
                       {member.role}
                     </span>
                     {currentMemberId === member.id ? (
-                      <span className="rounded-full bg-foreground px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                      <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
                         you
                       </span>
                     ) : null}
                   </div>
                   <p className="mt-2 text-sm text-ink-soft">{member.statusLabel}</p>
                   {member.location ? (
-                    <p className="mt-2 font-mono text-[11px] text-muted">
+                    <p className="mt-2 font-mono text-[11px] text-foreground">
                       {member.location.lat.toFixed(privacyRule.locationPrecisionDecimals)},{" "}
                       {member.location.lng.toFixed(privacyRule.locationPrecisionDecimals)} ·{" "}
                       {member.location.source}
@@ -319,7 +319,7 @@ export function RoomMemberManager({
                         : ""}
                     </p>
                   ) : (
-                    <p className="mt-2 text-xs text-muted">Location pending</p>
+                    <p className="mt-2 text-xs text-foreground">Location pending</p>
                   )}
                 </div>
 
@@ -328,7 +328,7 @@ export function RoomMemberManager({
                     type="button"
                     onClick={() => onRemoveMember?.(member.id)}
                     disabled={member.role === "host"}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:border-coral hover:text-coral disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted-foreground transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={`Remove ${member.displayName}`}
                     title={
                       member.role === "host"
@@ -383,19 +383,19 @@ export function RoomMemberManager({
               </div>
 
               {locationLocked ? (
-                <p className="mt-3 text-xs text-muted">
+                <p className="mt-3 text-xs text-foreground">
                   Invite slot stays passive until a real member joins.
                 </p>
               ) : null}
 
               {isLiveMode && !canUpdateThisMember ? (
-                <p className="mt-3 text-xs text-muted">
+                <p className="mt-3 text-xs text-foreground">
                   Tiap member update lokasinya sendiri dari device mereka.
                 </p>
               ) : null}
 
               {editingMemberId === member.id ? (
-                <div className="mt-4 space-y-4 rounded-[1.2rem] border border-line bg-surface p-4">
+                <div className="mt-4 space-y-4 rounded-2xl border border-line bg-surface p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <input
                       data-testid={`member-latitude-${member.id}`}
@@ -406,7 +406,7 @@ export function RoomMemberManager({
                         updateDraftCoordinate(nextLat, manualLng);
                       }}
                       placeholder="Latitude"
-                      className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+                      className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                     <input
                       data-testid={`member-longitude-${member.id}`}
@@ -423,7 +423,7 @@ export function RoomMemberManager({
                         }
                       }}
                       placeholder="Longitude"
-                      className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+                      className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
@@ -444,7 +444,7 @@ export function RoomMemberManager({
                       type="button"
                       onClick={() => void handleManualSave(member.id)}
                       data-testid={`member-save-location-${member.id}`}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                     >
                       <Check className="h-4 w-4" />
                       Save
@@ -455,7 +455,7 @@ export function RoomMemberManager({
                         setEditingMemberId(null);
                         setPickedCoordinate(null);
                       }}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
                     >
                       <X className="h-4 w-4" />
                       Cancel

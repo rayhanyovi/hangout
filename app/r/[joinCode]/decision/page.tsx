@@ -32,9 +32,9 @@ export default async function RoomDecisionPage({
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4 py-3 shadow-[0_12px_40px_rgba(31,27,23,0.08)]">
+        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4 py-3 shadow-lg">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-teal text-sm font-bold text-white">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
               H
             </span>
             <div>
@@ -46,7 +46,7 @@ export default async function RoomDecisionPage({
           </div>
           <Link
             href={`/r/${joinCode}`}
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to room
@@ -55,20 +55,20 @@ export default async function RoomDecisionPage({
 
         {finalizedVenue ? (
           <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <article className="rounded-[2rem] border border-line bg-surface p-7 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+            <article className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
               <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
                 Finalized venue
               </p>
               <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
                 {finalizedVenue.name}
               </h1>
-              <p className="mt-4 text-base leading-8 text-muted md:text-lg">
+              <p className="mt-4 text-base leading-8 text-foreground md:text-lg">
                 Host sudah mengunci venue ini sebagai hasil akhir room{" "}
                 <span className="font-mono text-foreground">{joinCode}</span>.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[1.3rem] border border-line bg-white/80 p-4">
+                <div className="rounded-2xl border border-line bg-card p-4">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                     Category
                   </p>
@@ -76,7 +76,7 @@ export default async function RoomDecisionPage({
                     {finalizedVenue.category}
                   </p>
                 </div>
-                <div className="rounded-[1.3rem] border border-line bg-white/80 p-4">
+                <div className="rounded-2xl border border-line bg-card p-4">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                     Distance
                   </p>
@@ -84,7 +84,7 @@ export default async function RoomDecisionPage({
                     {finalizedVenue.distanceToCenterM} m from midpoint
                   </p>
                 </div>
-                <div className="rounded-[1.3rem] border border-line bg-white/80 p-4">
+                <div className="rounded-2xl border border-line bg-card p-4">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                     Votes locked
                   </p>
@@ -99,34 +99,34 @@ export default async function RoomDecisionPage({
                   href={finalizedVenue.mapUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                 >
                   Open in Maps
                   <ExternalLink className="h-4 w-4" />
                 </a>
                 <Link
                   href={`/r/${joinCode}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
                 >
                   Return to room
                 </Link>
               </div>
             </article>
 
-            <article className="rounded-[2rem] border border-line bg-surface p-7 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+            <article className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
               <div className="flex items-center gap-2">
                 <MapPinned className="h-4 w-4 text-muted" />
                 <p className="text-sm font-semibold text-foreground">
                   Final handoff
                 </p>
               </div>
-              <p className="mt-4 text-sm leading-7 text-muted">
+              <p className="mt-4 text-sm leading-7 text-foreground">
                 Deep link maps sekarang sudah stabil karena decision route baca
                 finalized room state yang persisted, bukan lagi preview shell.
               </p>
 
               {finalizedVenue.address ? (
-                <div className="mt-5 rounded-[1.3rem] border border-line bg-white/80 p-4">
+                <div className="mt-5 rounded-2xl border border-line bg-card p-4">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                     Address
                   </p>
@@ -136,7 +136,7 @@ export default async function RoomDecisionPage({
                 </div>
               ) : null}
 
-              <div className="mt-5 rounded-[1.3rem] border border-line bg-white/80 p-4">
+              <div className="mt-5 rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-center gap-2">
                   <Vote className="h-4 w-4 text-muted" />
                   <p className="text-sm font-semibold text-foreground">
@@ -168,21 +168,21 @@ export default async function RoomDecisionPage({
             </article>
           </section>
         ) : (
-          <section className="rounded-[2rem] border border-line bg-surface p-7 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+          <section className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
               Finalized venue
             </p>
             <h1 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">
               Belum ada keputusan final.
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-muted">
+            <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
               Host belum mengunci venue untuk room ini. Voting masih bisa
               berubah selama room masih berstatus open.
             </p>
             <div className="mt-6">
               <Link
                 href={`/r/${joinCode}`}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
               >
                 Back to room
               </Link>

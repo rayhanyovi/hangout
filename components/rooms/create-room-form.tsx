@@ -100,7 +100,7 @@ export function CreateRoomForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-6 rounded-[2rem] border border-line bg-white/78 p-6 shadow-[0_22px_70px_rgba(31,27,23,0.12)]"
+      className="grid gap-6 rounded-3xl border border-line bg-card p-6 shadow-xl"
     >
       <div className="space-y-2">
         <label
@@ -114,7 +114,7 @@ export function CreateRoomForm() {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Friday catch-up"
-          className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+          className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
@@ -130,11 +130,11 @@ export function CreateRoomForm() {
           value={hostDisplayName}
           onChange={(event) => setHostDisplayName(event.target.value)}
           placeholder="Yovi"
-          className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+          className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
-      <div className="rounded-[1.5rem] border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted">
+      <div className="rounded-2xl border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted-foreground">
         Room akan dibuat dulu dengan setup default. Transport mode, radius,
         kategori venue, budget, dan preferensi lanjutan bisa diatur dari room
         setelah host masuk.
@@ -157,17 +157,17 @@ export function CreateRoomForm() {
       ) : null}
 
       {error ? (
-        <p className="text-sm font-medium text-coral">{error}</p>
+        <p className="text-sm font-medium text-destructive">{error}</p>
       ) : null}
 
       <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted">
+        <p className="text-sm text-foreground">
           Cukup isi nama acara dan nama host untuk buka room baru.
         </p>
         <button
           type="submit"
           disabled={isPending || isSubmitting}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending || isSubmitting ? "Opening room..." : "Create room"}
           <ArrowRight className="h-4 w-4" />

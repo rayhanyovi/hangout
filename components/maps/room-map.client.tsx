@@ -17,28 +17,28 @@ import type {
 } from "@/components/maps/room-map";
 
 const memberIcon = new L.DivIcon({
-  html: `<div style="background:#df6f4f;width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;border:3px solid white;box-shadow:0 10px 24px rgba(31,27,23,0.18);">M</div>`,
+  html: `<div style="background:var(--primary);width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--primary-foreground);font-weight:700;font-size:12px;border:3px solid var(--card);box-shadow:var(--shadow-lg);">M</div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   className: "",
 });
 
 const midpointIcon = new L.DivIcon({
-  html: `<div style="background:#1d7c73;width:38px;height:38px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;border:3px solid white;box-shadow:0 10px 24px rgba(31,27,23,0.18);">+</div>`,
+  html: `<div style="background:var(--success);width:38px;height:38px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--primary-foreground);font-weight:700;font-size:14px;border:3px solid var(--card);box-shadow:var(--shadow-lg);">+</div>`,
   iconSize: [38, 38],
   iconAnchor: [19, 19],
   className: "",
 });
 
 const venueIcon = new L.DivIcon({
-  html: `<div style="background:#f4be64;width:30px;height:30px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#1f1b17;font-weight:700;font-size:11px;border:3px solid white;box-shadow:0 10px 24px rgba(31,27,23,0.16);">V</div>`,
+  html: `<div style="background:var(--accent);width:30px;height:30px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--accent-foreground);font-weight:700;font-size:11px;border:3px solid var(--card);box-shadow:var(--shadow-lg);">V</div>`,
   iconSize: [30, 30],
   iconAnchor: [15, 15],
   className: "",
 });
 
 const selectedVenueIcon = new L.DivIcon({
-  html: `<div style="background:#1f1b17;width:34px;height:34px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#f7f1e8;font-weight:700;font-size:11px;border:3px solid white;box-shadow:0 12px 28px rgba(31,27,23,0.2);">V</div>`,
+  html: `<div style="background:var(--foreground);width:34px;height:34px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--background);font-weight:700;font-size:11px;border:3px solid var(--card);box-shadow:var(--shadow-xl);">V</div>`,
   iconSize: [34, 34],
   iconAnchor: [17, 17],
   className: "",
@@ -123,21 +123,21 @@ export function RoomMapClient({
     venues.find((venue) => venue.id === selectedVenueId) ?? null;
 
   return (
-    <div className="relative overflow-hidden rounded-[1.5rem] border border-line shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+    <div className="relative overflow-hidden rounded-2xl border border-line shadow-xl">
       <div className="pointer-events-none absolute left-4 top-4 z-[500] flex max-w-[calc(100%-2rem)] flex-wrap gap-2">
-        <div className="rounded-full border border-line bg-white/92 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_10px_24px_rgba(31,27,23,0.12)]">
+        <div className="rounded-full border border-line bg-card px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-md">
           {members.length} members
         </div>
-        <div className="rounded-full border border-line bg-white/92 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_10px_24px_rgba(31,27,23,0.12)]">
+        <div className="rounded-full border border-line bg-card px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-md">
           {venues.length} venues
         </div>
         {radiusM ? (
-          <div className="rounded-full border border-line bg-white/92 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_10px_24px_rgba(31,27,23,0.12)]">
+          <div className="rounded-full border border-line bg-card px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-md">
             radius {radiusM >= 1000 ? `${radiusM / 1000} km` : `${radiusM} m`}
           </div>
         ) : null}
         {selectedVenue ? (
-          <div className="rounded-full border border-line bg-foreground px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-background shadow-[0_10px_24px_rgba(31,27,23,0.12)]">
+          <div className="rounded-full border border-line bg-primary px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground shadow-md">
             focus {selectedVenue.name}
           </div>
         ) : null}
@@ -161,8 +161,8 @@ export function RoomMapClient({
             center={[midpoint.lat, midpoint.lng]}
             radius={radiusM}
             pathOptions={{
-              color: "#1d7c73",
-              fillColor: "#1d7c73",
+              color: "var(--success)",
+              fillColor: "var(--success)",
               fillOpacity: 0.08,
               weight: 2,
               dashArray: "6 4",

@@ -557,11 +557,11 @@ export function RoomPageShell({
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        <header className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+        <header className="rounded-3xl border border-line bg-surface p-6 shadow-xl">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                <span className="h-2 w-2 rounded-full bg-teal" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-success" />
                 {draftSeed.previewMode ? "Preview room shell" : "Live room"}
               </div>
               <div>
@@ -571,7 +571,7 @@ export function RoomPageShell({
                 <h1 className="mt-2 text-4xl font-semibold tracking-[-0.06em] text-foreground md:text-5xl">
                   {draftSeed.title ?? `Room ${joinCode}`}
                 </h1>
-                <p className="mt-3 text-base leading-8 text-muted md:text-lg">
+                <p className="mt-3 text-base leading-8 text-foreground md:text-lg">
                   Route utama ini sudah berfungsi sebagai pusat koordinasi:
                   anggota, lokasi, midpoint, venue shortlist, voting, dan final
                   decision nantinya hidup di sini.
@@ -579,7 +579,7 @@ export function RoomPageShell({
               </div>
             </div>
 
-            <div className="grid gap-3 rounded-[1.6rem] border border-line bg-white/76 p-5 text-sm text-ink-soft sm:min-w-[280px]">
+            <div className="grid gap-3 rounded-3xl border border-line bg-card p-5 text-sm text-ink-soft sm:min-w-[280px]">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                   Shareable route
@@ -597,7 +597,7 @@ export function RoomPageShell({
                 </Link>
                 <Link
                   href={getRoomDecisionRoute(joinCode)}
-                  className="flex-1 rounded-full bg-foreground px-4 py-3 text-center font-semibold text-background transition hover:-translate-y-0.5"
+                  className="flex-1 rounded-full bg-primary px-4 py-3 text-center font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                 >
                   Preview decision
                 </Link>
@@ -633,7 +633,7 @@ export function RoomPageShell({
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-[1.3rem] border border-line bg-white/78 p-4"
+                className="rounded-2xl border border-line bg-card p-4"
               >
                 <item.icon className="h-4 w-4 text-muted" />
                 <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
@@ -752,7 +752,7 @@ export function RoomPageShell({
               onUpdateMemberLocation={handleUpdateMemberLocation}
             />
 
-            <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
+            <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                 Venue preferences
               </p>
@@ -760,18 +760,18 @@ export function RoomPageShell({
                 {requestedVenueCategories.map((category) => (
                   <span
                     key={category}
-                    className="rounded-full border border-line bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground"
+                    className="rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground"
                   >
                     {category}
                   </span>
                 ))}
               </div>
-              <p className="mt-4 text-sm leading-7 text-muted">
+              <p className="mt-4 text-sm leading-7 text-foreground">
                 {draftSeed.tags.length > 0
                   ? `Soft tags: ${draftSeed.tags.join(", ")}.`
                   : "Soft tags belum dipasang; venue shortlist akan mulai dari kategori inti."}
               </p>
-              <p className="mt-3 text-sm leading-7 text-muted">
+              <p className="mt-3 text-sm leading-7 text-foreground">
                 Live room sekarang bisa mengubah radius dan kategori pencarian
                 langsung dari shortlist tanpa kembali ke host setup.
               </p>
@@ -793,14 +793,14 @@ export function RoomPageShell({
             />
 
             <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-              <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
+              <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                   Fairness shell
                 </p>
                 {fairnessSummary.rows.length > 0 ? (
                   <>
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                      <div className="rounded-2xl border border-line bg-card p-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                           Midpoint
                         </p>
@@ -808,7 +808,7 @@ export function RoomPageShell({
                           {midpoint?.lat.toFixed(4)}, {midpoint?.lng.toFixed(4)}
                         </p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                      <div className="rounded-2xl border border-line bg-card p-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                           Average distance
                         </p>
@@ -816,7 +816,7 @@ export function RoomPageShell({
                           {fairnessSummary.averageDistanceKm?.toFixed(1)} km
                         </p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                      <div className="rounded-2xl border border-line bg-card p-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                           Distance spread
                         </p>
@@ -826,7 +826,7 @@ export function RoomPageShell({
                       </div>
                     </div>
 
-                    <p className="mt-4 text-xs leading-6 text-muted">
+                    <p className="mt-4 text-xs leading-6 text-foreground">
                       Hangout sekarang fokus ke titik tengah dan jarak tiap
                       member ke midpoint. Kalau nanti mau lihat rute perjalanan,
                       handoff-nya langsung ke aplikasi Maps dari decision page.
@@ -837,13 +837,13 @@ export function RoomPageShell({
                         <div key={row.id}>
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-foreground">{row.name}</span>
-                            <span className="text-muted">
+                            <span className="text-foreground">
                               {row.distanceKm.toFixed(1)} km
                             </span>
                           </div>
-                          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
+                          <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-soft">
                             <div
-                              className="h-full rounded-full bg-teal"
+                              className="h-full rounded-full bg-success"
                               style={{ width: `${Math.min(100, (row.distanceKm / maxDistanceKm) * 100)}%` }}
                             />
                           </div>
@@ -852,7 +852,7 @@ export function RoomPageShell({
                     </div>
                   </>
                 ) : (
-                  <p className="mt-5 text-sm leading-7 text-muted">
+                  <p className="mt-5 text-sm leading-7 text-foreground">
                     Fairness summary will appear after at least two members have
                     shared a location in the room shell.
                   </p>
