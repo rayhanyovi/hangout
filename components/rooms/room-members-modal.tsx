@@ -52,12 +52,12 @@ export function RoomMembersModal({
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="mb-2">
+        {/* <DialogHeader className="mb-2">
           <DialogTitle>Anggota room</DialogTitle>
           <DialogDescription>
             Kelola anggota dan perbarui lokasi dari satu tempat.
           </DialogDescription>
-        </DialogHeader>
+        </DialogHeader> */}
         <RoomMemberManager
           members={members}
           privacyMode={privacyMode}

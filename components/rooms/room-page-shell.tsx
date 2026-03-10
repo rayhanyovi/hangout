@@ -80,6 +80,7 @@ export function RoomPageShell({
   initialMembers,
   liveRoomContext,
 }: RoomPageShellProps) {
+  const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
   const { toast } = useToast();
   const isLiveRoom = liveRoomContext !== undefined;
   const [members, setMembers] = useState<DraftRoomMember[]>(
@@ -190,7 +191,18 @@ export function RoomPageShell({
     !isLiveRoom ||
     (currentMemberId !== null &&
       members.some((member) => member.id === currentMemberId));
-  const inviteLink = getRoomRoute(joinCode);
+  const inviteLink = useMemo(() => {
+    const roomRoute = getRoomRoute(joinCode);
+    const baseUrl =
+      publicAppUrl ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+
+    if (!baseUrl) {
+      return roomRoute;
+    }
+
+    return `${baseUrl.replace(/\/$/, "")}${roomRoute}`;
+  }, [joinCode, publicAppUrl]);
   const needsMoreLocations = mappedMembers.length < 2;
   const showVenueEmptyState =
     midpoint !== null &&
@@ -911,7 +923,7 @@ export function RoomPageShell({
                 Link undangan
               </p>
               <p className="mt-3 break-all rounded-xl bg-primary-soft px-3 py-2 font-mono text-xs text-foreground">
-                https://hangout.rayhan.id/room/{joinCode}
+                {inviteLink}
               </p>
               <div className="mt-4 flex flex-col gap-2">
                 <Button
