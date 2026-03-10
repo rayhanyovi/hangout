@@ -1,7 +1,7 @@
 import type { BudgetLevel, Coordinate, VenueCategory } from "@/lib/contracts";
 import { fetchOverpassVenues } from "@/lib/venues";
 import { rankVenuesForRoom, type RankedVenue } from "@/lib/rooms";
-import { VENUE_SEARCH_STRATEGY } from "@/lib/server/venues/strategy";
+import { serverEnv } from "@/lib/server/config/env";
 
 type SearchRoomVenuesInput = {
   midpoint: Coordinate;
@@ -42,10 +42,12 @@ type VenueSearchRuntimeState = {
   rateLimits: Map<string, VenueRateLimitEntry>;
 };
 
-const VENUE_CACHE_TTL_MS = VENUE_SEARCH_STRATEGY.cacheTtlSeconds * 1000;
-const VENUE_STALE_TTL_MS = VENUE_CACHE_TTL_MS * 3;
-const VENUE_RATE_LIMIT_WINDOW_MS = 30_000;
-const VENUE_RATE_LIMIT_MAX_REQUESTS = 6;
+const VENUE_CACHE_TTL_MS = serverEnv.HANGOUT_VENUE_CACHE_TTL_SECONDS * 1000;
+const VENUE_STALE_TTL_MS = serverEnv.HANGOUT_VENUE_STALE_TTL_SECONDS * 1000;
+const VENUE_RATE_LIMIT_WINDOW_MS =
+  serverEnv.HANGOUT_VENUE_RATE_LIMIT_WINDOW_SECONDS * 1000;
+const VENUE_RATE_LIMIT_MAX_REQUESTS =
+  serverEnv.HANGOUT_VENUE_RATE_LIMIT_MAX_REQUESTS;
 
 declare global {
   var __hangoutVenueSearchRuntimeState: VenueSearchRuntimeState | undefined;

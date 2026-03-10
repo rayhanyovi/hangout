@@ -60,7 +60,7 @@ Checklist convention:
 - [x] Add loading, empty, timeout, and provider-error states across core flows
 - [x] Add rate limiting and caching around venue search
 - [x] Add analytics and operational logging for key room events
-- [ ] Add environment variable documentation and example config
+- [x] Add environment variable documentation and example config
 - [ ] Validate mobile usability and responsive behavior
 - [ ] Prepare Vercel deployment configuration and runtime assumptions
 

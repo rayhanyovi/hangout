@@ -5,6 +5,7 @@
 - `docs/overview.md` is the technical and product map of the project.
 - `docs/to_dos.md` is the main progress tracker.
 - `docs/workflow_contract.md` is the canonical workflow contract for AI agents and developers.
+- `docs/environment.md` documents runtime and deployment-facing environment variables.
 
 ## Core Agreement
 
@@ -37,6 +38,7 @@ For any non-trivial task, follow this order:
 ## Documentation Rules
 
 - Update `docs/overview.md` when understanding of architecture, scope, or system boundaries materially changes.
+- Update `docs/environment.md` when runtime configuration, deployment assumptions, or environment variable usage changes.
 - Update `docs/to_dos.md` when a task is started, finished, split, or deprioritized.
 - Keep task names concrete enough that another developer can resume work without re-auditing the repo.
 - If a discovered blocker changes the migration strategy, record it in `docs/overview.md` or this contract before continuing.

@@ -27,6 +27,7 @@ import {
 } from "@/lib/contracts";
 import { buildMidpointFairnessSummary } from "@/lib/rooms";
 import { LOCATION_RETENTION_POLICY } from "@/lib/contracts/privacy";
+import { serverEnv } from "@/lib/server/config/env";
 import { trackAnalyticsEvent } from "@/lib/server/observability/logger";
 
 type RoomStoreFile = {
@@ -40,7 +41,8 @@ type RoomStoreFile = {
   }>;
 };
 
-const ROOM_STORE_DIRECTORY = path.join(tmpdir(), "hangout");
+const ROOM_STORE_DIRECTORY =
+  serverEnv.HANGOUT_ROOM_STORE_DIR ?? path.join(tmpdir(), "hangout");
 const ROOM_STORE_FILE = path.join(ROOM_STORE_DIRECTORY, "room-store.json");
 const EMPTY_ROOM_STORE: RoomStoreFile = {
   rooms: [],
