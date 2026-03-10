@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     const result = await searchRoomVenues({
       ...parsed.data,
       rateLimitKey: joinCode ? `room:${joinCode}` : getRequesterKey(request),
+      signal: request.signal,
     });
 
     if (joinCode) {

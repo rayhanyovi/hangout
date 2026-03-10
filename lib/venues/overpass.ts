@@ -146,6 +146,7 @@ export async function fetchOverpassVenues(
   midpoint: Coordinate,
   radiusM: number,
   categories: VenueCategory[],
+  signal?: AbortSignal,
 ) {
   const query = buildOverpassQuery(midpoint, radiusM, categories);
   const response = await fetch("https://overpass-api.de/api/interpreter", {
@@ -154,7 +155,9 @@ export async function fetchOverpassVenues(
       "Content-Type": "text/plain;charset=UTF-8",
     },
     body: query,
-    signal: AbortSignal.timeout(10_000),
+    signal: signal
+      ? AbortSignal.any([AbortSignal.timeout(10_000), signal])
+      : AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {

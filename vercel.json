@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "npm ci",
+  "functions": {
+    "app/api/rooms/**/*.ts": {
+      "maxDuration": 10
+    },
+    "app/api/venues/**/*.ts": {
+      "maxDuration": 15,
+      "supportsCancellation": true
+    }
+  }
+}

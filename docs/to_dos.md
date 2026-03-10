@@ -62,7 +62,7 @@ Checklist convention:
 - [x] Add analytics and operational logging for key room events
 - [x] Add environment variable documentation and example config
 - [x] Validate mobile usability and responsive behavior
-- [ ] Prepare Vercel deployment configuration and runtime assumptions
+- [x] Prepare Vercel deployment configuration and runtime assumptions
 
 ## Cutover
 

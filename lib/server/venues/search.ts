@@ -11,6 +11,7 @@ type SearchRoomVenuesInput = {
   budget?: BudgetLevel;
   limit?: number;
   rateLimitKey: string;
+  signal?: AbortSignal;
 };
 
 export type VenueSearchResult = {
@@ -172,8 +173,9 @@ async function fetchAndRankVenues({
   tags,
   budget,
   limit = 8,
+  signal,
 }: Omit<SearchRoomVenuesInput, "rateLimitKey">) {
-  const venues = await fetchOverpassVenues(midpoint, radiusM, categories);
+  const venues = await fetchOverpassVenues(midpoint, radiusM, categories, signal);
 
   return rankVenuesForRoom(
     venues,
@@ -205,6 +207,7 @@ export async function searchRoomVenues({
   budget,
   limit = 8,
   rateLimitKey,
+  signal,
 }: SearchRoomVenuesInput): Promise<VenueSearchResult> {
   const nowMs = Date.now();
   const state = getRuntimeState();
@@ -271,6 +274,7 @@ export async function searchRoomVenues({
         tags,
         budget,
         limit,
+        signal,
       });
 
       state.cache.set(cacheKey, {
