@@ -16,11 +16,11 @@ The core product promise is simple: reduce location debate, make the tradeoff tr
 
 This repository currently contains two separate app states:
 
-- Root app: a fresh Next.js 16 App Router starter in `/app`
+- Root app: a Next.js 16 App Router shell in `/app` with Hangout branding applied
 - Reference app: a Lovable export in `/my-idea-app` built with Vite + React + TypeScript
 - Root TypeScript and ESLint validation are now scoped to the production app, not the Lovable reference folder
 
-The root Next.js app is still a starter shell and does not yet implement the product. The Lovable export contains the only real product prototype today.
+The root Next.js app now has branded metadata, styling tokens, and a landing shell, but core product flows are not yet implemented. The Lovable export still contains the only real product prototype today.
 
 ## What Exists In `my-idea-app`
 
