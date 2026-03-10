@@ -1,12 +1,59 @@
-import { RouteShell } from "@/components/routes/route-shell";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { CreateRoomForm } from "@/components/rooms/create-room-form";
 
 export default function NewRoomPage() {
   return (
-    <RouteShell
-      badge="Route: /rooms/new"
-      title="Host setup dimulai dari sini."
-      description="Route ini dibekukan sebagai entry point untuk host membuat room baru, memilih transport mode, privacy mode, dan preferensi venue dasar sebelum link dibagikan."
-      nextStep="Bangun form create-room yang menghasilkan join code dan me-redirect host ke room route utama."
-    />
+    <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="flex items-center justify-between rounded-full border border-line bg-surface px-4 py-3 shadow-[0_12px_40px_rgba(31,27,23,0.08)] backdrop-blur">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-coral text-sm font-bold text-white">
+              H
+            </span>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
+                Hangout
+              </p>
+              <p className="text-xs text-muted">Create room flow</p>
+            </div>
+          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </Link>
+        </div>
+
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-5 rounded-[2rem] border border-line bg-surface p-7 shadow-[0_20px_60px_rgba(31,27,23,0.12)]">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
+              Route: /rooms/new
+            </p>
+            <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
+              Host setup dimulai dari sini.
+            </h1>
+            <p className="text-base leading-8 text-muted md:text-lg">
+              Form ini mengunci alur host setup di root app: title, transport
+              mode, privacy mode, radius, dan preferensi venue dasar.
+            </p>
+            <div className="rounded-[1.5rem] border border-line bg-white/80 p-5">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                Current phase
+              </p>
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
+                Submit form sekarang akan membuka room shell preview memakai
+                draft seed di URL. Persistence backend dan server create-room API
+                menyusul di task berikutnya.
+              </p>
+            </div>
+          </div>
+
+          <CreateRoomForm />
+        </section>
+      </div>
+    </main>
   );
 }

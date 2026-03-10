@@ -44,7 +44,7 @@ Checklist convention:
 
 ## Feature Migration
 
-- [ ] Build the landing/create-room flow
+- [x] Build the landing/create-room flow
 - [ ] Build the room page route and shell
 - [ ] Migrate member management UI from the prototype into root Next.js
 - [ ] Implement privacy-aware location input flows

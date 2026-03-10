@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { JoinRoomInline } from "@/components/rooms/join-room-inline";
+import { MVP_STATIC_ROUTES } from "@/lib/contracts";
 
 const pillars = [
   {
@@ -91,10 +94,11 @@ export function HomeShell() {
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
-                href="#brief"
+                href={MVP_STATIC_ROUTES.newRoom}
                 className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background transition-transform duration-200 hover:-translate-y-0.5"
               >
-                Lihat core product
+                Create room
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="#build-track"
@@ -226,22 +230,25 @@ export function HomeShell() {
 
       <section
         id="brief"
-        className="mx-auto grid max-w-7xl gap-5 px-6 pb-8 pt-6 md:px-10 lg:grid-cols-3"
+        className="mx-auto grid max-w-7xl gap-5 px-6 pb-8 pt-6 md:px-10 lg:grid-cols-[0.95fr_1.05fr]"
       >
-        {pillars.map((pillar) => (
-          <article
-            key={pillar.title}
-            className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]"
-          >
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
-              {pillar.eyebrow}
-            </p>
-            <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
-              {pillar.title}
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-muted">{pillar.copy}</p>
-          </article>
-        ))}
+        <div className="grid gap-5 lg:grid-cols-1">
+          {pillars.map((pillar) => (
+            <article
+              key={pillar.title}
+              className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]"
+            >
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
+                {pillar.eyebrow}
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+                {pillar.title}
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-muted">{pillar.copy}</p>
+            </article>
+          ))}
+        </div>
+        <JoinRoomInline />
       </section>
 
       <section
