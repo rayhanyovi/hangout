@@ -72,3 +72,14 @@ Checklist convention:
 - [x] Replace the temporary room store with durable PostgreSQL persistence
 - [x] Remove `/my-idea-app` after required parity is complete
 - [x] Re-run build, lint, and tests from the root app as release gates
+
+## Next Phase
+
+- [ ] Provision PostgreSQL in the target environment and apply `db/schema.sql`
+- [ ] Configure Vercel project environment variables and execute the first durable preview deployment
+- [ ] Run deployed smoke tests for room create, join, vote, and finalize against the live database
+- [ ] Add an automated database migration workflow so schema changes do not rely only on `db:push`
+- [ ] Add scheduled TTL cleanup for expired rooms outside the current request-driven pruning path
+- [ ] Add end-to-end smoke coverage for the core room flow
+- [ ] Add address search or pin-on-map location input beyond raw coordinates
+- [ ] Evaluate transport-aware fairness or ETA-based scoring as the next product upgrade
