@@ -18,6 +18,7 @@ import type {
 export const ROOM_FLOW_OPERATIONS = [
   "create_room",
   "join_room",
+  "add_room_member",
   "get_room_snapshot",
   "update_member_location",
   "compute_midpoint",
@@ -50,6 +51,18 @@ export type JoinRoomOutput = {
   snapshot: RoomSnapshot;
 };
 
+export type AddRoomMemberInput = {
+  roomId: RoomId;
+  actorMemberId: MemberId;
+  displayName: string;
+};
+
+export type AddRoomMemberOutput = {
+  room: Room;
+  member: Member;
+  snapshot: RoomSnapshot;
+};
+
 export type GetRoomSnapshotInput = {
   joinCode: JoinCode;
   memberId?: MemberId;
@@ -59,6 +72,7 @@ export type GetRoomSnapshotOutput = RoomSnapshot;
 
 export type UpdateMemberLocationInput = {
   roomId: RoomId;
+  actorMemberId: MemberId;
   memberId: MemberId;
   location: MemberLocation;
 };

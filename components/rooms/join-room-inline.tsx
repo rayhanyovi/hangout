@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { getRoomRoute, type JoinRoomOutput } from "@/lib/contracts";
+import { persistRoomMemberCookie } from "@/lib/rooms";
 import { joinRoomSchema } from "@/lib/validation";
 
 type JoinRoomInlineProps = {
@@ -72,11 +73,10 @@ export function JoinRoomInline({
         throw new Error(errorPayload.message ?? "Join request failed.");
       }
       const output = payload as JoinRoomOutput;
+      persistRoomMemberCookie(output.room.joinCode, output.member.memberId);
 
       startTransition(() => {
-        router.push(
-          `${getRoomRoute(output.room.joinCode)}?member=${output.member.memberId}`,
-        );
+        router.push(getRoomRoute(output.room.joinCode));
       });
     } catch (submitError) {
       setError(
@@ -100,12 +100,12 @@ export function JoinRoomInline({
     >
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Search className="h-4 w-4" />
-        {compact ? "Join this room" : "Join existing room"}
+        {compact ? "Masuk ke room ini" : "Masuk ke room"}
       </div>
       <p className="mt-2 text-sm leading-6 text-foreground">
         {compact
-          ? "Masuk sebagai member untuk share lokasi dari device kamu sendiri."
-          : "Punya room code? Masuk langsung ke room yang sama untuk lanjut koordinasi."}
+          ? "Masuk sebagai anggota lalu bagikan lokasi dari device kamu sendiri."
+          : "Punya kode room? Masuk untuk lihat titik temu, shortlist tempat, dan voting bareng."}
       </p>
 
       <div
@@ -113,8 +113,8 @@ export function JoinRoomInline({
       >
         {!compact ? (
           <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Join code
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              Kode room
             </span>
             <input
               value={joinCode}
@@ -125,7 +125,7 @@ export function JoinRoomInline({
           </label>
         ) : null}
         <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             Nama
           </span>
           <input
@@ -138,21 +138,21 @@ export function JoinRoomInline({
         <button
           type="submit"
           disabled={isPending || isSubmitting}
-          aria-label={isPending || isSubmitting ? "Opening room" : "Join room"}
+          aria-label={isPending || isSubmitting ? "Membuka room" : "Masuk ke room"}
           data-testid="join-room-submit"
           className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending || isSubmitting ? "Opening..." : <ArrowRight className="h-4 w-4" />}
+          {isPending || isSubmitting ? "Membuka..." : <ArrowRight className="h-4 w-4" />}
         </button>
       </div>
 
       {compact ? (
         <p className="mt-3 text-xs text-foreground">
-          Join code <span className="font-mono text-foreground">{initialJoinCode}</span> akan dipakai otomatis.
+          Kode room <span className="font-mono text-foreground">{initialJoinCode}</span> akan dipakai otomatis.
         </p>
       ) : (
         <p className="mt-3 text-xs text-foreground">
-          Join flow sekarang memakai room API nyata dan langsung masuk ke room yang sama.
+          Setelah masuk, kamu akan langsung dibawa ke room yang sama dengan teman-temanmu.
         </p>
       )}
 
@@ -160,8 +160,8 @@ export function JoinRoomInline({
         <div className="mt-4">
           <RoomStatusBanner
             tone="info"
-            title="Joining the room."
-            description="Identity member sedang dibuat dan snapshot room akan dibuka setelah request selesai."
+            title="Sedang masuk ke room."
+            description="Tunggu sebentar, room sedang disiapkan untuk kamu."
           />
         </div>
       ) : null}
@@ -170,8 +170,8 @@ export function JoinRoomInline({
         <div className="mt-4">
           <RoomStatusBanner
             tone="warning"
-            title="Join flow is taking longer than expected."
-            description="Ulangi join request ini. Jika tetap timeout, cek room API atau status persistence lokal."
+            title="Masuk ke room lebih lama dari biasanya."
+            description="Coba ulangi lagi sebentar."
           />
         </div>
       ) : null}

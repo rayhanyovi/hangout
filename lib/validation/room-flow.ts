@@ -30,8 +30,15 @@ export const joinRoomSchema = z.object({
   displayName: z.string().trim().min(1).max(40),
 });
 
+export const addRoomMemberSchema = z.object({
+  roomId: identifierSchema,
+  actorMemberId: identifierSchema,
+  displayName: z.string().trim().min(1).max(40),
+});
+
 export const updateMemberLocationSchema = z.object({
   roomId: identifierSchema,
+  actorMemberId: identifierSchema,
   memberId: identifierSchema,
   location: coordinateSchema.extend({
     source: z.enum(LOCATION_SOURCES),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Crosshair,
@@ -24,11 +24,14 @@ import { createValidatedMemberLocation, type DraftRoomMember } from "@/lib/rooms
 import { joinRoomSchema } from "@/lib/validation";
 
 type RoomMemberManagerProps = {
-  inviteLink: string;
   members: DraftRoomMember[];
   privacyMode: PrivacyMode;
   mode?: "preview" | "live";
   currentMemberId?: string | null;
+  focusMemberId?: string | null;
+  focusRequestKey?: number;
+  canAddMembers?: boolean;
+  canManageAllLocations?: boolean;
   onAddMember?: (displayName: string) => void;
   onRemoveMember?: (memberId: string) => void;
   onUpdateMemberLocation: (
@@ -40,11 +43,14 @@ type RoomMemberManagerProps = {
 const displayNameSchema = joinRoomSchema.shape.displayName;
 
 export function RoomMemberManager({
-  inviteLink,
   members,
   privacyMode,
   mode = "preview",
   currentMemberId = null,
+  focusMemberId = null,
+  focusRequestKey = 0,
+  canAddMembers = false,
+  canManageAllLocations = false,
   onAddMember,
   onRemoveMember,
   onUpdateMemberLocation,
@@ -57,10 +63,40 @@ export function RoomMemberManager({
   const [manualLng, setManualLng] = useState("");
   const [pickedCoordinate, setPickedCoordinate] = useState<Coordinate | null>(null);
 
-  const sharedCount = members.filter((member) => member.location !== null).length;
-  const pendingCount = members.length - sharedCount;
   const privacyRule = PRIVACY_RULES[privacyMode];
   const isLiveMode = mode === "live";
+
+  useEffect(() => {
+    if (!focusRequestKey || !focusMemberId) {
+      return;
+    }
+
+    const targetElement = document.getElementById(
+      `member-location-actions-${focusMemberId}`,
+    );
+
+    if (!targetElement) {
+      return;
+    }
+
+    targetElement.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+    targetElement.classList.remove("location-actions-highlight");
+    void targetElement.offsetWidth;
+    targetElement.classList.add("location-actions-highlight");
+
+    const timeoutId = window.setTimeout(() => {
+      targetElement.classList.remove("location-actions-highlight");
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      targetElement.classList.remove("location-actions-highlight");
+    };
+  }, [focusMemberId, focusRequestKey]);
 
   const updateDraftCoordinate = (nextLat: string, nextLng: string) => {
     const lat = Number(nextLat);
@@ -82,7 +118,7 @@ export function RoomMemberManager({
     const parsed = displayNameSchema.safeParse(pendingName.trim());
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Member name is not valid.");
+      setError(parsed.error.issues[0]?.message ?? "Nama anggota belum valid.");
       return;
     }
 
@@ -114,7 +150,7 @@ export function RoomMemberManager({
       setError(
         locationError instanceof Error
           ? locationError.message
-          : "Location is not valid.",
+          : "Lokasi belum valid.",
       );
       return false;
     }
@@ -126,7 +162,7 @@ export function RoomMemberManager({
 
   const handleCurrentLocation = (memberId: string) => {
     if (!navigator.geolocation) {
-      setError("Browser geolocation is not available. Use manual coordinates instead.");
+      setError("Browser ini tidak bisa mengambil lokasi otomatis. Coba isi manual.");
       return;
     }
 
@@ -144,7 +180,7 @@ export function RoomMemberManager({
       },
       () => {
         setLoadingMemberId(null);
-        setError("Unable to capture browser location. Try manual coordinates.");
+        setError("Lokasi belum berhasil diambil. Coba isi manual.");
       },
       {
         enableHighAccuracy: privacyMode === "exact",
@@ -174,7 +210,7 @@ export function RoomMemberManager({
     const lng = Number(manualLng);
 
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      setError("Latitude and longitude must both be numbers.");
+      setError("Lintang dan bujur harus berupa angka.");
       return;
     }
 
@@ -193,62 +229,20 @@ export function RoomMemberManager({
   return (
     <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
       <div className="flex items-center gap-2">
-        <Users className="h-4 w-4 text-muted" />
-        <h2 className="text-lg font-semibold text-foreground">
-          Member management
-        </h2>
-      </div>
-
-      <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-card p-4 text-sm text-muted-foreground sm:grid-cols-3">
+        <Users className="h-4 w-4 text-muted-foreground" />
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em]">
-            Total members
+          <h2 className="text-lg font-semibold text-primary">Anggota room</h2>
+          <p className="mt-2 text-sm leading-7 text-foreground">
+            {privacyMode} · {privacyRule.locationPrecisionDecimals} digit presisi lokasi
           </p>
-          <p className="mt-2 text-lg font-semibold text-foreground">{members.length}</p>
-        </div>
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em]">
-            Shared location
-          </p>
-          <p className="mt-2 text-lg font-semibold text-foreground">{sharedCount}</p>
-        </div>
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em]">
-            Pending location
-          </p>
-          <p className="mt-2 text-lg font-semibold text-foreground">{pendingCount}</p>
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-line bg-card p-4 text-sm leading-7 text-muted-foreground">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-          Privacy mode
-        </p>
-        <p className="mt-2 text-sm font-semibold capitalize text-foreground">
-          {privacyMode} · {privacyRule.locationPrecisionDecimals} decimals
-        </p>
-        <p className="mt-2 text-foreground">{privacyRule.description}</p>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-dashed border-line bg-card p-4">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-          Invite route
-        </p>
-        <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
-          {inviteLink}
-        </p>
-        <p className="mt-3 text-xs text-foreground">
-          {isLiveMode
-            ? "Roster bertambah saat orang join lewat link atau join code ini."
-            : "Preview mode masih mengizinkan host menambah slot member secara lokal."}
-        </p>
-      </div>
-
-      {!isLiveMode ? (
+      {!isLiveMode || canAddMembers ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
           <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Add member
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              Tambah anggota
             </span>
             <input
               value={pendingName}
@@ -259,7 +253,7 @@ export function RoomMemberManager({
                   handleAddMember();
                 }
               }}
-              placeholder="Type a member name"
+              placeholder="Tulis nama anggota"
               className="w-full rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
@@ -269,13 +263,12 @@ export function RoomMemberManager({
             className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
           >
             <Plus className="h-4 w-4" />
-            Add
+            Tambah
           </button>
         </div>
       ) : (
         <p className="mt-5 text-sm leading-7 text-foreground">
-          Live room mode membatasi update lokasi ke member yang sedang masuk
-          dari device ini.
+          Setiap orang memperbarui lokasinya dari device masing-masing.
         </p>
       )}
 
@@ -285,7 +278,12 @@ export function RoomMemberManager({
         {members.map((member) => {
           const locationLocked = member.id === "invite-slot";
           const canUpdateThisMember =
-            !isLiveMode || (currentMemberId !== null && member.id === currentMemberId);
+            !isLiveMode ||
+            canManageAllLocations ||
+            (currentMemberId !== null && member.id === currentMemberId);
+          const canUseCurrentLocation =
+            !isLiveMode ||
+            (currentMemberId !== null && member.id === currentMemberId);
 
           return (
             <div
@@ -296,15 +294,15 @@ export function RoomMemberManager({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-primary">
                       {member.displayName}
                     </p>
-                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       {member.role}
                     </span>
                     {currentMemberId === member.id ? (
                       <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
-                        you
+                        kamu
                       </span>
                     ) : null}
                   </div>
@@ -319,7 +317,7 @@ export function RoomMemberManager({
                         : ""}
                     </p>
                   ) : (
-                    <p className="mt-2 text-xs text-foreground">Location pending</p>
+                    <p className="mt-2 text-xs text-foreground">Lokasi belum dibagikan</p>
                   )}
                 </div>
 
@@ -332,7 +330,7 @@ export function RoomMemberManager({
                     aria-label={`Remove ${member.displayName}`}
                     title={
                       member.role === "host"
-                        ? "Host stays in the room"
+                        ? "Host tetap ada di room"
                         : `Remove ${member.displayName}`
                     }
                   >
@@ -341,7 +339,10 @@ export function RoomMemberManager({
                 ) : null}
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div
+                id={`member-location-actions-${member.id}`}
+                className="mt-4 flex flex-wrap gap-2 rounded-2xl p-2 transition"
+              >
                 <button
                   type="button"
                   onClick={() => handleCurrentLocation(member.id)}
@@ -349,7 +350,7 @@ export function RoomMemberManager({
                   disabled={
                     loadingMemberId === member.id ||
                     locationLocked ||
-                    !canUpdateThisMember
+                    !canUseCurrentLocation
                   }
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -358,7 +359,7 @@ export function RoomMemberManager({
                   ) : (
                     <Crosshair className="h-3.5 w-3.5" />
                   )}
-                  Use current location
+                  Gunakan lokasi saat ini
                 </button>
                 <button
                   type="button"
@@ -368,7 +369,7 @@ export function RoomMemberManager({
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <MapPinned className="h-3.5 w-3.5" />
-                  Enter coordinates
+                  Isi koordinat
                 </button>
                 <button
                   type="button"
@@ -378,19 +379,25 @@ export function RoomMemberManager({
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Map className="h-3.5 w-3.5" />
-                  Pin on map
+                  Pilih di peta
                 </button>
               </div>
 
               {locationLocked ? (
                 <p className="mt-3 text-xs text-foreground">
-                  Invite slot stays passive until a real member joins.
+                  Slot ini akan aktif setelah ada orang yang benar-benar join ke room.
                 </p>
               ) : null}
 
               {isLiveMode && !canUpdateThisMember ? (
                 <p className="mt-3 text-xs text-foreground">
-                  Tiap member update lokasinya sendiri dari device mereka.
+                  Hanya host atau anggota yang bersangkutan yang bisa mengubah lokasi ini.
+                </p>
+              ) : null}
+
+              {isLiveMode && canManageAllLocations && currentMemberId !== member.id ? (
+                <p className="mt-3 text-xs text-foreground">
+                  Untuk anggota ini, host bisa isi koordinat manual atau pilih titik di peta.
                 </p>
               ) : null}
 
@@ -405,7 +412,7 @@ export function RoomMemberManager({
                         setManualLat(nextLat);
                         updateDraftCoordinate(nextLat, manualLng);
                       }}
-                      placeholder="Latitude"
+                      placeholder="Lintang"
                       className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                     <input
@@ -422,7 +429,7 @@ export function RoomMemberManager({
                           void handleManualSave(member.id);
                         }
                       }}
-                      placeholder="Longitude"
+                      placeholder="Bujur"
                       className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -447,7 +454,7 @@ export function RoomMemberManager({
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                     >
                       <Check className="h-4 w-4" />
-                      Save
+                      Simpan
                     </button>
                     <button
                       type="button"
@@ -458,7 +465,7 @@ export function RoomMemberManager({
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
                     >
                       <X className="h-4 w-4" />
-                      Cancel
+                      Batal
                     </button>
                   </div>
                 </div>

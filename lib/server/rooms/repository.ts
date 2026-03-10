@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+  AddRoomMemberOutput,
   CastVoteOutput,
   CreateRoomInput,
   CreateRoomOutput,
@@ -35,6 +36,14 @@ export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
   return getRepository().joinRoom(input);
 }
 
+export async function addRoomMember(
+  joinCode: string,
+  actorMemberId: string,
+  displayName: string,
+): Promise<AddRoomMemberOutput> {
+  return getRepository().addRoomMember(joinCode, actorMemberId, displayName);
+}
+
 export async function getRoomSnapshot(
   joinCode: string,
 ): Promise<GetRoomSnapshotOutput | null> {
@@ -43,10 +52,16 @@ export async function getRoomSnapshot(
 
 export async function updateMemberLocation(
   joinCode: string,
+  actorMemberId: string,
   memberId: string,
   location: MemberLocation,
 ): Promise<UpdateMemberLocationOutput> {
-  return getRepository().updateMemberLocation(joinCode, memberId, location);
+  return getRepository().updateMemberLocation(
+    joinCode,
+    actorMemberId,
+    memberId,
+    location,
+  );
 }
 
 export async function setRoomVenueCache(joinCode: string, venues: Venue[]) {

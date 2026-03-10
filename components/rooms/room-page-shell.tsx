@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
+import { Check, Copy, Crosshair } from "lucide-react";
 import {
+  type AddRoomMemberOutput,
   getRoomDecisionRoute,
   getRoomRoute,
   VENUE_CATEGORIES,
@@ -18,16 +19,18 @@ import {
   createPendingDraftRoomMember,
   mapSnapshotMembersToDraftMembers,
   memberHasLocation,
+  persistRoomMemberCookie,
   type DraftRoomMember,
   type DraftRoomSeed,
   type RankedVenue,
 } from "@/lib/rooms";
 import { RoomMap } from "@/components/maps/room-map";
-import { RoomMemberManager } from "@/components/rooms/room-member-manager";
+import { JoinRoomModal } from "@/components/rooms/join-room-modal";
+import { RoomMembersModal } from "@/components/rooms/room-members-modal";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
-import { RoomVotingPanel } from "@/components/rooms/room-voting-panel";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
-import { JoinRoomInline } from "@/components/rooms/join-room-inline";
+import { useToast } from "@/components/ui/toast";
+import type { SelectOption } from "@/components/ui/select";
 
 type RoomPageShellProps = {
   joinCode: string;
@@ -55,9 +58,11 @@ type VoteMutationResponse = {
   message?: string;
 };
 
-type AsyncStatus = "idle" | "loading" | "success" | "timeout" | "error";
+type AddMemberResponse = AddRoomMemberOutput & {
+  message?: string;
+};
 
-const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
+type AsyncStatus = "idle" | "loading" | "success" | "timeout" | "error";
 const ROOM_ACTION_TIMEOUT_MS = 10000;
 const ROOM_RADIUS_OPTIONS = [500, 1000, 2000, 3000, 5000] as const;
 
@@ -67,6 +72,7 @@ export function RoomPageShell({
   initialMembers,
   liveRoomContext,
 }: RoomPageShellProps) {
+  const { toast } = useToast();
   const isLiveRoom = liveRoomContext !== undefined;
   const [members, setMembers] = useState<DraftRoomMember[]>(
     () => initialMembers ?? buildDraftRoomMembers(draftSeed),
@@ -75,12 +81,8 @@ export function RoomPageShell({
   const [isVenueLoading, setIsVenueLoading] = useState(false);
   const [venueError, setVenueError] = useState<string | null>(null);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [activeVenueCategories, setActiveVenueCategories] = useState<
-    VenueCategory[]
-  >(() =>
-    draftSeed.categories.length > 0
-      ? draftSeed.categories
-      : DEFAULT_PREVIEW_CATEGORIES,
+  const [selectedVenueCategory, setSelectedVenueCategory] = useState<string>(
+    () => draftSeed.categories[0] ?? "all",
   );
   const [searchRadiusM, setSearchRadiusM] = useState(draftSeed.radiusMDefault);
   const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
@@ -94,6 +96,13 @@ export function RoomPageShell({
   const [voteError, setVoteError] = useState<string | null>(null);
   const [isVoteSubmitting, setIsVoteSubmitting] = useState(false);
   const [venueStatus, setVenueStatus] = useState<AsyncStatus>("idle");
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [membersFocusRequestKey, setMembersFocusRequestKey] = useState(0);
+  const [membersFocusMemberId, setMembersFocusMemberId] = useState<string | null>(null);
+  const previousFinalizedVenueIdRef = useRef<string | null>(
+    liveRoomContext?.finalizedVenueId ?? null,
+  );
 
   const mappedMembers = useMemo(
     () =>
@@ -116,12 +125,12 @@ export function RoomPageShell({
   const midpoint = fairnessSummary.midpoint;
   const midpointLat = midpoint?.lat ?? null;
   const midpointLng = midpoint?.lng ?? null;
-  const requestedVenueCategories = useMemo<VenueCategory[]>(
+  const activeVenueCategories = useMemo<VenueCategory[]>(
     () =>
-      draftSeed.categories.length > 0
-        ? draftSeed.categories
-        : DEFAULT_PREVIEW_CATEGORIES,
-    [draftSeed.categories],
+      selectedVenueCategory === "all"
+        ? []
+        : [selectedVenueCategory as VenueCategory],
+    [selectedVenueCategory],
   );
   const searchCategoryParam = activeVenueCategories.join(",");
   const requestedTagParam = draftSeed.tags.join(",");
@@ -129,9 +138,32 @@ export function RoomPageShell({
     () => VENUE_CATEGORIES.filter((category) => category !== "other"),
     [],
   );
+  const venueCategorySelectOptions = useMemo<SelectOption[]>(
+    () => [
+      {
+        label: "Semua kategori",
+        value: "all",
+      },
+      ...searchCategoryOptions.map((category) => ({
+        label: category[0]?.toUpperCase() + category.slice(1),
+        value: category,
+      })),
+    ],
+    [searchCategoryOptions],
+  );
+  const venueRadiusSelectOptions = useMemo<SelectOption[]>(
+    () =>
+      ROOM_RADIUS_OPTIONS.map((option) => ({
+        label: option >= 1000 ? `${option / 1000} km` : `${option} m`,
+        value: String(option),
+      })),
+    [],
+  );
   const currentMemberId = liveRoomContext?.currentMemberId ?? null;
   const hostMemberId =
     members.find((member) => member.role === "host")?.id ?? null;
+  const isCurrentMemberHost =
+    currentMemberId !== null && currentMemberId === hostMemberId;
   const viewerHasJoined =
     !isLiveRoom ||
     (currentMemberId !== null &&
@@ -144,19 +176,66 @@ export function RoomPageShell({
     venueError === null &&
     venues.length === 0 &&
     venueStatus !== "loading";
-  const finalizedVenueName =
-    finalizedVenueId !== null
-      ? venues.find((venue) => venue.venueId === finalizedVenueId)?.name ??
-        finalizedVenueId
-      : null;
-  const decisionRoute = getRoomDecisionRoute(joinCode);
+  const sharedCount = members.filter((member) => member.location !== null).length;
+  const pendingCount = members.length - sharedCount;
 
   const handleAddMember = (displayName: string) => {
-    if (isLiveRoom) {
+    if (!isLiveRoom) {
+      setMembers((current) => [...current, createPendingDraftRoomMember(displayName)]);
       return;
     }
 
-    setMembers((current) => [...current, createPendingDraftRoomMember(displayName)]);
+    if (!currentMemberId || !isCurrentMemberHost) {
+      return;
+    }
+
+    setRoomSyncError(null);
+    setRoomSyncStatus("loading");
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, ROOM_ACTION_TIMEOUT_MS);
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/rooms/${joinCode}/members`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            actorMemberId: currentMemberId,
+            displayName,
+          }),
+        });
+        const payload = (await response.json()) as AddMemberResponse;
+
+        if (!response.ok) {
+          throw new Error(payload.message ?? "Gagal menambahkan anggota.");
+        }
+
+        setMembers(mapSnapshotMembersToDraftMembers(payload.snapshot));
+        setVotes(payload.snapshot.votes);
+        setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+        setRoomSyncError(null);
+        setRoomSyncStatus("success");
+      } catch (error) {
+        setRoomSyncError(
+          didTimeout
+            ? "Penambahan anggota terlalu lama. Coba lagi sebentar."
+            : error instanceof Error
+              ? error.message
+              : "Gagal menambahkan anggota.",
+        );
+        setRoomSyncStatus(didTimeout ? "timeout" : "error");
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    })();
   };
 
   const handleRemoveMember = (memberId: string) => {
@@ -191,7 +270,10 @@ export function RoomPageShell({
       return;
     }
 
-    if (!currentMemberId || currentMemberId !== memberId) {
+    if (
+      !currentMemberId ||
+      (!isCurrentMemberHost && currentMemberId !== memberId)
+    ) {
       return;
     }
 
@@ -226,6 +308,7 @@ export function RoomPageShell({
         },
         signal: controller.signal,
         body: JSON.stringify({
+          actorMemberId: currentMemberId,
           memberId,
           location,
         }),
@@ -253,20 +336,6 @@ export function RoomPageShell({
     } finally {
       window.clearTimeout(timeoutId);
     }
-  };
-
-  const handleToggleVenueCategory = (category: VenueCategory) => {
-    setActiveVenueCategories((current) => {
-      if (current.length === 0) {
-        return [category];
-      }
-
-      if (current.includes(category)) {
-        return current.filter((item) => item !== category);
-      }
-
-      return [...current, category];
-    });
   };
 
   const handleCastVote = async (venueId: string) => {
@@ -368,6 +437,14 @@ export function RoomPageShell({
   };
 
   useEffect(() => {
+    if (!isLiveRoom || !currentMemberId) {
+      return;
+    }
+
+    persistRoomMemberCookie(joinCode, currentMemberId);
+  }, [currentMemberId, isLiveRoom, joinCode]);
+
+  useEffect(() => {
     if (!isLiveRoom) {
       return;
     }
@@ -442,7 +519,7 @@ export function RoomPageShell({
     void syncRoomSnapshot();
     const interval = window.setInterval(() => {
       void syncRoomSnapshot();
-    }, 4000);
+    }, 10000);
 
     return () => {
       cancelled = true;
@@ -554,127 +631,167 @@ export function RoomPageShell({
     );
   }, [venues]);
 
+  useEffect(() => {
+    const previousFinalizedVenueId = previousFinalizedVenueIdRef.current;
+
+    if (
+      finalizedVenueId &&
+      finalizedVenueId !== previousFinalizedVenueId
+    ) {
+      const finalizedVenueName =
+        venues.find((venue) => venue.venueId === finalizedVenueId)?.name ??
+        "pilihan akhir";
+
+      toast({
+        tone: "success",
+        title: "Pilihan tempat sudah dikunci",
+        description: `${finalizedVenueName} sekarang jadi hasil akhir room ini.`,
+      });
+    }
+
+    previousFinalizedVenueIdRef.current = finalizedVenueId;
+  }, [finalizedVenueId, toast, venues]);
+
+  useEffect(() => {
+    if (!inviteCopied) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setInviteCopied(false);
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inviteCopied]);
+
+  const handleCopyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteCopied(true);
+    } catch {
+      setRoomSyncError("Link undangan belum bisa disalin dari browser ini.");
+      setRoomSyncStatus("error");
+    }
+  };
+
+  const handleOpenMembersModal = (focusMemberId?: string | null) => {
+    setMembersFocusMemberId(focusMemberId ?? null);
+    setMembersFocusRequestKey((current) => current + 1);
+    setIsMembersModalOpen(true);
+  };
+
+  if (isLiveRoom && !viewerHasJoined) {
+    return <JoinRoomModal joinCode={joinCode} />;
+  }
+
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="rounded-3xl border border-line bg-surface p-6 shadow-xl">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <div className="rounded-[2rem] border border-line bg-card p-6 shadow-sm">
               <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-success" />
-                {draftSeed.previewMode ? "Preview room shell" : "Live room"}
+                {draftSeed.previewMode ? "Room baru" : "Room aktif"}
               </div>
-              <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
-                  Join code
-                </p>
-                <h1 className="mt-2 text-4xl font-semibold tracking-[-0.06em] text-foreground md:text-5xl">
-                  {draftSeed.title ?? `Room ${joinCode}`}
-                </h1>
-                <p className="mt-3 text-base leading-8 text-foreground md:text-lg">
-                  Route utama ini sudah berfungsi sebagai pusat koordinasi:
-                  anggota, lokasi, midpoint, venue shortlist, voting, dan final
-                  decision nantinya hidup di sini.
-                </p>
-              </div>
+              <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-primary md:text-5xl">
+                {draftSeed.title ?? `Room ${joinCode}`}
+              </h1>
+              <p className="mt-3 max-w-3xl text-base leading-8 text-foreground md:text-lg">
+                Kumpulkan lokasi semua orang, lihat titik temu yang adil, lalu
+                pilih tempat yang paling cocok bareng-bareng.
+              </p>
             </div>
 
-            <div className="grid gap-3 rounded-3xl border border-line bg-card p-5 text-sm text-ink-soft sm:min-w-[280px]">
-              <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                  Shareable route
+            <div className="grid gap-4 md:grid-cols-2">
+              <article className="rounded-[2rem] border border-line bg-card p-5 shadow-sm">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                  Link undangan
                 </p>
-                <p className="mt-2 rounded-xl bg-surface px-3 py-2 font-mono text-xs">
+                <p className="mt-3 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
                   {inviteLink}
                 </p>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Link
-                  href="/rooms/new"
-                  className="flex-1 rounded-full border border-line bg-surface px-4 py-3 text-center font-semibold transition hover:-translate-y-0.5"
-                >
-                  {isLiveRoom ? "New room" : "Edit setup"}
-                </Link>
-                <Link
-                  href={getRoomDecisionRoute(joinCode)}
-                  className="flex-1 rounded-full bg-primary px-4 py-3 text-center font-semibold text-primary-foreground transition hover:-translate-y-0.5"
-                >
-                  Preview decision
-                </Link>
-              </div>
-            </div>
-          </div>
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyInviteLink()}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-center font-semibold text-foreground transition hover:-translate-y-0.5"
+                  >
+                    {inviteCopied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                    {inviteCopied ? "Link tersalin" : "Copy link undangan"}
+                  </button>
+                  <Link
+                    href={getRoomDecisionRoute(joinCode)}
+                    className="rounded-full bg-primary px-4 py-3 text-center font-semibold text-primary-foreground transition hover:-translate-y-0.5"
+                  >
+                    Lihat hasil akhir
+                  </Link>
+                </div>
+              </article>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-4">
-            {[
-              {
-                icon: Compass,
-                label: "Transport",
-                value: draftSeed.transportMode,
-              },
-              {
-                icon: ShieldCheck,
-                label: "Privacy",
-                value: draftSeed.privacyMode,
-              },
-              {
-                icon: MapPinned,
-                label: "Radius",
-                value:
-                  searchRadiusM >= 1000
-                    ? `${searchRadiusM / 1000} km`
-                    : `${searchRadiusM} m`,
-              },
-              {
-                icon: TimerReset,
-                label: "Flow mode",
-                value: draftSeed.previewMode ? "draft preview" : "persisted room",
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-line bg-card p-4"
-              >
-                <item.icon className="h-4 w-4 text-muted" />
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  {item.label}
+              <article className="rounded-[2rem] border border-line bg-card p-5 shadow-sm">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                  Anggota
                 </p>
-                <p className="mt-2 text-sm font-semibold capitalize text-foreground">
-                  {item.value}
-                </p>
-              </div>
-            ))}
+                <div className="mt-3 grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenMembersModal()}
+                    className="rounded-2xl border border-line bg-surface p-3 text-left transition hover:-translate-y-0.5"
+                  >
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Total anggota
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{members.length}</p>
+                  </button>
+                  <div className="rounded-2xl border border-line bg-surface p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Sudah share
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{sharedCount}</p>
+                  </div>
+                  <div className="rounded-2xl border border-line bg-surface p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Belum share
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{pendingCount}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenMembersModal(currentMemberId)}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                >
+                  <Crosshair className="h-4 w-4" />
+                  Masukkan lokasi saya
+                </button>
+              </article>
+            </div>
           </div>
         </header>
 
-        {isLiveRoom && !viewerHasJoined ? (
-          <JoinRoomInline initialJoinCode={joinCode} compact />
-        ) : null}
-
         <div className="space-y-4">
-          {isLiveRoom && !viewerHasJoined ? (
-            <RoomStatusBanner
-              tone="info"
-              title="Join this room before interacting."
-              description="Masuk dulu sebagai member supaya device kamu bisa kirim lokasi, vote venue, dan ikut final decision di room yang sama."
-            />
-          ) : null}
-
           {isLiveRoom && roomSyncStatus === "loading" ? (
             <RoomStatusBanner
               tone="info"
-              title="Syncing the live room."
-              description="Snapshot room sedang di-refresh dari server supaya roster, vote, dan decision state tetap konsisten."
+              title="Memuat room."
+              description="Data anggota, voting, dan pilihan tempat sedang disegarkan."
             />
           ) : null}
 
           {roomSyncStatus === "timeout" ? (
             <RoomStatusBanner
               tone="warning"
-              title="Room sync is slower than expected."
+              title="Room belum selesai dimuat."
               description={
                 roomSyncError ??
-                "Snapshot room belum kembali dari server. Tunggu sebentar atau ulangi aksi terakhir."
+                "Coba tunggu sebentar lalu ulangi lagi."
               }
             />
           ) : null}
@@ -682,7 +799,7 @@ export function RoomPageShell({
           {roomSyncStatus === "error" && roomSyncError ? (
             <RoomStatusBanner
               tone="error"
-              title="Room sync failed."
+              title="Room belum bisa dimuat."
               description={roomSyncError}
             />
           ) : null}
@@ -690,26 +807,26 @@ export function RoomPageShell({
           {needsMoreLocations ? (
             <RoomStatusBanner
               tone="info"
-              title="Need more member locations."
-              description="Midpoint dan venue shortlist baru dihitung setelah minimal dua member berhasil share lokasi."
+              title="Butuh minimal dua lokasi."
+              description="Minta setidaknya dua orang membagikan lokasi supaya titik temu dan rekomendasi tempat bisa dihitung."
             />
           ) : null}
 
           {!needsMoreLocations && venueStatus === "loading" ? (
             <RoomStatusBanner
               tone="info"
-              title="Searching nearby venues."
-              description="Provider venue sedang mencari kandidat di sekitar midpoint room ini."
+              title="Sedang mencari tempat."
+              description="Kami lagi cari opsi tempat di sekitar titik temu grup."
             />
           ) : null}
 
           {venueStatus === "timeout" ? (
             <RoomStatusBanner
               tone="warning"
-              title="Venue provider is taking too long."
+              title="Pencarian tempat lebih lama dari biasanya."
               description={
                 venueError ??
-                "Request venue belum selesai tepat waktu. Coba tunggu polling berikutnya atau perbarui data room."
+                "Coba tunggu sebentar atau ubah radius pencarian."
               }
             />
           ) : null}
@@ -717,7 +834,7 @@ export function RoomPageShell({
           {venueStatus === "error" && venueError ? (
             <RoomStatusBanner
               tone="error"
-              title="Venue provider failed."
+              title="Tempat belum berhasil dimuat."
               description={venueError}
             />
           ) : null}
@@ -725,57 +842,37 @@ export function RoomPageShell({
           {showVenueEmptyState ? (
             <RoomStatusBanner
               tone="warning"
-              title="No venues matched this room yet."
-              description="Filter kategori, radius, atau tag saat ini belum menghasilkan shortlist yang layak. Ubah preferensi room atau tunggu midpoint bergeser."
-            />
-          ) : null}
-
-          {finalizedVenueName ? (
-            <RoomStatusBanner
-              tone="success"
-              title="Room decision has been finalized."
-              description={`Venue ${finalizedVenueName} sudah dikunci. Lanjut ke decision route ${decisionRoute} untuk handoff Maps dan recap voting.`}
+              title="Belum ada tempat yang cocok."
+              description="Coba ubah kategori atau radius supaya pilihan tempatnya lebih banyak."
             />
           ) : null}
         </div>
 
-        <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
           <div className="space-y-6">
-            <RoomMemberManager
-              inviteLink={inviteLink}
-              members={members}
-              privacyMode={draftSeed.privacyMode}
-              mode={isLiveRoom ? "live" : "preview"}
+            <VenueShortlist
+              venues={venues}
+              activeCategories={activeVenueCategories}
+              selectedCategory={selectedVenueCategory}
+              selectedRadius={String(searchRadiusM)}
+              categoryOptions={venueCategorySelectOptions}
+              radiusOptions={venueRadiusSelectOptions}
+              onCategoryChange={setSelectedVenueCategory}
+              onRadiusChange={(value) => setSearchRadiusM(Number(value))}
+              onSelectVenue={setSelectedVenueId}
+              isLoading={isVenueLoading}
+              errorMessage={venueError}
+              hasMidpoint={midpoint !== null}
+              selectedVenueId={selectedVenueId}
+              votes={isLiveRoom ? votes : []}
               currentMemberId={currentMemberId}
-              onAddMember={handleAddMember}
-              onRemoveMember={handleRemoveMember}
-              onUpdateMemberLocation={handleUpdateMemberLocation}
+              hostMemberId={hostMemberId}
+              finalizedVenueId={finalizedVenueId}
+              isSubmittingVote={isVoteSubmitting}
+              voteError={voteError}
+              onVote={isLiveRoom ? handleCastVote : undefined}
+              onFinalize={isLiveRoom ? handleFinalizeVenue : undefined}
             />
-
-            <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                Venue preferences
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {requestedVenueCategories.map((category) => (
-                  <span
-                    key={category}
-                    className="rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground"
-                  >
-                    {category}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-4 text-sm leading-7 text-foreground">
-                {draftSeed.tags.length > 0
-                  ? `Soft tags: ${draftSeed.tags.join(", ")}.`
-                  : "Soft tags belum dipasang; venue shortlist akan mulai dari kategori inti."}
-              </p>
-              <p className="mt-3 text-sm leading-7 text-foreground">
-                Live room sekarang bisa mengubah radius dan kategori pencarian
-                langsung dari shortlist tanpa kembali ke host setup.
-              </p>
-            </article>
           </div>
 
           <div className="space-y-6">
@@ -792,16 +889,15 @@ export function RoomPageShell({
               }))}
             />
 
-            <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-              <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                  Fairness shell
+            <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                  Titik temu grup
                 </p>
                 {fairnessSummary.rows.length > 0 ? (
                   <>
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-2xl border border-line bg-card p-4">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
                           Midpoint
                         </p>
                         <p className="mt-2 font-mono text-xs text-foreground">
@@ -809,27 +905,26 @@ export function RoomPageShell({
                         </p>
                       </div>
                       <div className="rounded-2xl border border-line bg-card p-4">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                          Average distance
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                          Rata-rata jarak
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-foreground">
+                        <p className="mt-2 text-sm font-semibold text-primary">
                           {fairnessSummary.averageDistanceKm?.toFixed(1)} km
                         </p>
                       </div>
                       <div className="rounded-2xl border border-line bg-card p-4">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                          Distance spread
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                          Selisih jarak
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-foreground">
+                        <p className="mt-2 text-sm font-semibold text-primary">
                           {fairnessSummary.spreadKm?.toFixed(1)} km
                         </p>
                       </div>
                     </div>
 
                     <p className="mt-4 text-xs leading-6 text-foreground">
-                      Hangout sekarang fokus ke titik tengah dan jarak tiap
-                      member ke midpoint. Kalau nanti mau lihat rute perjalanan,
-                      handoff-nya langsung ke aplikasi Maps dari decision page.
+                      Bagian ini membantu kamu melihat seberapa adil titik temu
+                      untuk semua orang di room.
                     </p>
 
                     <div className="mt-5 space-y-3">
@@ -853,46 +948,32 @@ export function RoomPageShell({
                   </>
                 ) : (
                   <p className="mt-5 text-sm leading-7 text-foreground">
-                    Fairness summary will appear after at least two members have
-                    shared a location in the room shell.
+                    Titik temu akan muncul setelah minimal dua orang membagikan
+                    lokasi mereka.
                   </p>
                 )}
-              </article>
-
-              <div className="space-y-6">
-                <VenueShortlist
-                  venues={venues}
-                  activeCategories={activeVenueCategories}
-                  onToggleCategory={handleToggleVenueCategory}
-                  onSelectRadius={setSearchRadiusM}
-                  onSelectVenue={setSelectedVenueId}
-                  isLoading={isVenueLoading}
-                  errorMessage={venueError}
-                  categories={searchCategoryOptions}
-                  radiusM={searchRadiusM}
-                  radiusOptions={[...ROOM_RADIUS_OPTIONS]}
-                  hasMidpoint={midpoint !== null}
-                  selectedVenueId={selectedVenueId}
-                />
-
-                {isLiveRoom ? (
-                  <RoomVotingPanel
-                    venues={venues}
-                    votes={votes}
-                    selectedVenueId={selectedVenueId}
-                    currentMemberId={currentMemberId}
-                    hostMemberId={hostMemberId}
-                    finalizedVenueId={finalizedVenueId}
-                    isSubmitting={isVoteSubmitting}
-                    errorMessage={voteError}
-                    onVote={handleCastVote}
-                    onFinalize={handleFinalizeVenue}
-                  />
-                ) : null}
-              </div>
-            </div>
+            </article>
           </div>
         </section>
+
+        <RoomMembersModal
+          open={isMembersModalOpen}
+          members={members}
+          privacyMode={draftSeed.privacyMode}
+          mode={isLiveRoom ? "live" : "preview"}
+          currentMemberId={currentMemberId}
+          focusMemberId={membersFocusMemberId}
+          focusRequestKey={membersFocusRequestKey}
+          canAddMembers={!isLiveRoom || isCurrentMemberHost}
+          canManageAllLocations={Boolean(isLiveRoom && isCurrentMemberHost)}
+          onClose={() => {
+            setIsMembersModalOpen(false);
+            setMembersFocusMemberId(null);
+          }}
+          onAddMember={handleAddMember}
+          onRemoveMember={handleRemoveMember}
+          onUpdateMemberLocation={handleUpdateMemberLocation}
+        />
       </div>
     </main>
   );

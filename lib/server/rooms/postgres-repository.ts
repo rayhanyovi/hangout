@@ -7,6 +7,7 @@ import {
   getRoomDecisionRoute,
   getRoomRoute,
   transitionRoomState,
+  type AddRoomMemberOutput,
   type CastVoteOutput,
   type CreateRoomInput,
   type CreateRoomOutput,
@@ -503,6 +504,60 @@ export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
   }
 }
 
+export async function addRoomMember(
+  joinCode: string,
+  actorMemberId: string,
+  displayName: string,
+): Promise<AddRoomMemberOutput> {
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+    await pruneExpiredRooms(client);
+
+    const roomRow = await fetchRoomRowByJoinCode(client, joinCode);
+
+    if (!roomRow) {
+      throw new Error("Room not found.");
+    }
+
+    const room = mapRoom(roomRow);
+
+    if (room.status !== "open") {
+      throw new Error("Room is not open for new members.");
+    }
+
+    if (room.createdByMemberId !== actorMemberId) {
+      throw new Error("Only the host can add members manually.");
+    }
+
+    const member = createMemberRecord(room.roomId, displayName, "member");
+    await insertMember(client, member);
+    const snapshot = await buildSnapshotForRoom(client, room);
+    await client.query("commit");
+
+    trackAnalyticsEvent("room_member_added_manually", {
+      roomId: room.roomId,
+      joinCode: room.joinCode,
+      actorMemberId,
+      memberId: member.memberId,
+      memberCount: snapshot.members.length,
+    });
+
+    return {
+      room,
+      member,
+      snapshot,
+    };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getRoomSnapshot(
   joinCode: string,
 ): Promise<GetRoomSnapshotOutput | null> {
@@ -527,6 +582,7 @@ export async function getRoomSnapshot(
 
 export async function updateMemberLocation(
   joinCode: string,
+  actorMemberId: string,
   memberId: string,
   location: MemberLocation,
 ): Promise<UpdateMemberLocationOutput> {
@@ -544,6 +600,33 @@ export async function updateMemberLocation(
     }
 
     const room = mapRoom(roomRow);
+    const actorResult = await client.query<MemberRow>(
+      `
+        select
+          member_id,
+          room_id,
+          display_name,
+          role,
+          joined_at,
+          last_active_at,
+          location
+        from members
+        where member_id = $1 and room_id = $2
+        limit 1
+      `,
+      [actorMemberId, room.roomId],
+    );
+
+    const actor = actorResult.rows[0] ? mapMember(actorResult.rows[0]) : null;
+
+    if (!actor) {
+      throw new Error("Actor member not found.");
+    }
+
+    if (actor.memberId !== memberId && actor.role !== "host") {
+      throw new Error("Only the host can update other members' locations.");
+    }
+
     const nextLocation = applyPrivacyModeToLocation(location, room.privacyMode);
     const updateResult = await client.query<{ member_id: string }>(
       `

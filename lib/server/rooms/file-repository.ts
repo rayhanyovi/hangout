@@ -9,6 +9,7 @@ import {
   getRoomDecisionRoute,
   getRoomRoute,
   transitionRoomState,
+  type AddRoomMemberOutput,
   type CastVoteOutput,
   type CreateRoomInput,
   type CreateRoomOutput,
@@ -306,6 +307,47 @@ export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
   };
 }
 
+export async function addRoomMember(
+  joinCode: string,
+  actorMemberId: string,
+  displayName: string,
+): Promise<AddRoomMemberOutput> {
+  const store = await readStore();
+  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
+
+  if (!room) {
+    throw new Error("Room not found.");
+  }
+
+  if (room.status !== "open") {
+    throw new Error("Room is not open for new members.");
+  }
+
+  if (room.createdByMemberId !== actorMemberId) {
+    throw new Error("Only the host can add members manually.");
+  }
+
+  const member = createMemberRecord(room.roomId, displayName, "member");
+  const nextStore = {
+    ...store,
+    members: [...store.members, member],
+  };
+
+  await writeStore(nextStore);
+  trackAnalyticsEvent("room_member_added_manually", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    actorMemberId,
+    memberId: member.memberId,
+  });
+
+  return {
+    room,
+    member,
+    snapshot: buildSnapshot(nextStore, room),
+  };
+}
+
 export async function getRoomSnapshot(
   joinCode: string,
 ): Promise<GetRoomSnapshotOutput | null> {
@@ -321,6 +363,7 @@ export async function getRoomSnapshot(
 
 export async function updateMemberLocation(
   joinCode: string,
+  actorMemberId: string,
   memberId: string,
   location: MemberLocation,
 ): Promise<UpdateMemberLocationOutput> {
@@ -331,12 +374,27 @@ export async function updateMemberLocation(
     throw new Error("Room not found.");
   }
 
-  const memberExists = store.members.some(
+  const actor = store.members.find(
+    (member) => member.memberId === actorMemberId && member.roomId === room.roomId,
+  );
+
+  if (!actor) {
+    throw new Error("Actor member not found.");
+  }
+
+  const targetMember = store.members.find(
     (member) => member.memberId === memberId && member.roomId === room.roomId,
   );
 
-  if (!memberExists) {
+  if (!targetMember) {
     throw new Error("Member not found.");
+  }
+
+  const canManageLocation =
+    actor.memberId === targetMember.memberId || actor.role === "host";
+
+  if (!canManageLocation) {
+    throw new Error("Only the host can update other members' locations.");
   }
 
   const nextMembers = store.members.map((member) =>

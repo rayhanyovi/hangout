@@ -20,7 +20,7 @@ describe("RoomVotingPanel", () => {
     );
 
     expect(
-      screen.getByText(/voting opens after the shortlist is ready/i),
+      screen.getByText(/voting akan dibuka setelah ada pilihan tempat/i),
     ).toBeInTheDocument();
   });
 });

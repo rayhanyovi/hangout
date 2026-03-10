@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { RoomPageShell } from "@/components/rooms/room-page-shell";
 import {
   buildDraftRoomSeedFromSnapshot,
   mapSnapshotMembersToDraftMembers,
+  readRoomMemberCookie,
   parseDraftRoomSearchParams,
 } from "@/lib/rooms";
 import { getRoomSnapshot } from "@/lib/server/rooms/repository";
@@ -36,7 +38,10 @@ export default async function RoomPage({
     notFound();
   }
 
-  const currentMemberId = getFirstValue(resolvedSearchParams.member);
+  const cookieStore = await cookies();
+  const currentMemberId =
+    getFirstValue(resolvedSearchParams.member) ??
+    readRoomMemberCookie(cookieStore, joinCode.toUpperCase());
 
   return (
     <RoomPageShell

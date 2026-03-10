@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { getRoomRoute, type CreateRoomOutput } from "@/lib/contracts";
+import { persistRoomMemberCookie } from "@/lib/rooms";
 import { createRoomSchema } from "@/lib/validation";
 
 const CREATE_ROOM_TIMEOUT_MS = 10000;
@@ -76,11 +77,10 @@ export function CreateRoomForm() {
         throw new Error(errorPayload.message ?? "Room creation failed.");
       }
       const output = payload as CreateRoomOutput;
+      persistRoomMemberCookie(output.room.joinCode, output.hostMember.memberId);
 
       startTransition(() => {
-        router.push(
-          `${getRoomRoute(output.room.joinCode)}?member=${output.hostMember.memberId}`,
-        );
+        router.push(getRoomRoute(output.room.joinCode));
       });
     } catch (submitError) {
       setError(
@@ -105,9 +105,9 @@ export function CreateRoomForm() {
       <div className="space-y-2">
         <label
           htmlFor="room-title"
-          className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+          className="block text-xs font-semibold uppercase tracking-[0.18em] text-primary"
         >
-          Room title
+          Nama acara
         </label>
         <input
           id="room-title"
@@ -121,9 +121,9 @@ export function CreateRoomForm() {
       <div className="space-y-2">
         <label
           htmlFor="host-name"
-          className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+          className="block text-xs font-semibold uppercase tracking-[0.18em] text-primary"
         >
-          Host name
+          Nama kamu
         </label>
         <input
           id="host-name"
@@ -135,24 +135,23 @@ export function CreateRoomForm() {
       </div>
 
       <div className="rounded-2xl border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted-foreground">
-        Room akan dibuat dulu dengan setup default. Transport mode, radius,
-        kategori venue, budget, dan preferensi lanjutan bisa diatur dari room
-        setelah host masuk.
+        Room akan dibuat dengan pengaturan awal yang aman. Nanti kamu masih
+        bisa atur radius, kategori tempat, dan preferensi lain dari dalam room.
       </div>
 
       {requestState === "loading" ? (
         <RoomStatusBanner
           tone="info"
-          title="Creating the room."
-          description="Nama acara dan host sedang dikirim ke room API supaya join code dan host session bisa dibuat."
+            title="Sedang membuat room."
+            description="Tunggu sebentar, room kamu lagi disiapkan."
         />
       ) : null}
 
       {requestState === "timeout" ? (
         <RoomStatusBanner
           tone="warning"
-          title="Room creation is taking longer than expected."
-          description="Coba kirim ulang setup host ini. Jika masalah berulang, cek server room API atau environment lokal."
+            title="Pembuatan room lebih lama dari biasanya."
+            description="Coba kirim ulang beberapa saat lagi."
         />
       ) : null}
 
@@ -162,14 +161,14 @@ export function CreateRoomForm() {
 
       <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-foreground">
-          Cukup isi nama acara dan nama host untuk buka room baru.
+          Isi dua kolom ini untuk mulai bikin room.
         </p>
         <button
           type="submit"
           disabled={isPending || isSubmitting}
           className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending || isSubmitting ? "Opening room..." : "Create room"}
+          {isPending || isSubmitting ? "Membuka room..." : "Buat room"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

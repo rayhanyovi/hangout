@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Circle,
   MapContainer,
@@ -54,8 +54,24 @@ function FitToData({
   venues: RoomMapVenue[];
 }) {
   const map = useMap();
+  const lastViewportSignatureRef = useRef<string | null>(null);
+  const viewportSignature = useMemo(() => {
+    const points = [
+      ...members.map((member) => `${member.id}:${member.lat.toFixed(5)},${member.lng.toFixed(5)}`),
+      ...venues.map((venue) => `${venue.id}:${venue.lat.toFixed(5)},${venue.lng.toFixed(5)}`),
+      midpoint
+        ? `midpoint:${midpoint.lat.toFixed(5)},${midpoint.lng.toFixed(5)}`
+        : null,
+    ].filter(Boolean);
+
+    return points.join("|");
+  }, [members, midpoint, venues]);
 
   useEffect(() => {
+    if (lastViewportSignatureRef.current === viewportSignature) {
+      return;
+    }
+
     const points = [
       ...members.map((member) => [member.lat, member.lng] as [number, number]),
       ...venues.map((venue) => [venue.lat, venue.lng] as [number, number]),
@@ -67,11 +83,13 @@ function FitToData({
 
     if (points.length === 0) {
       map.setView([-6.2, 106.8], 12);
+      lastViewportSignatureRef.current = viewportSignature;
       return;
     }
 
     if (points.length === 1) {
       map.setView(points[0], 14);
+      lastViewportSignatureRef.current = viewportSignature;
       return;
     }
 
@@ -79,7 +97,8 @@ function FitToData({
       padding: [40, 40],
       maxZoom: 15,
     });
-  }, [map, members, midpoint, venues]);
+    lastViewportSignatureRef.current = viewportSignature;
+  }, [map, members, midpoint, venues, viewportSignature]);
 
   return null;
 }
@@ -90,15 +109,22 @@ function FocusSelectedVenue({
   selectedVenue: RoomMapVenue | null;
 }) {
   const map = useMap();
+  const lastSelectedVenueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!selectedVenue) {
+      lastSelectedVenueIdRef.current = null;
+      return;
+    }
+
+    if (lastSelectedVenueIdRef.current === selectedVenue.id) {
       return;
     }
 
     map.flyTo([selectedVenue.lat, selectedVenue.lng], Math.max(map.getZoom(), 15), {
       duration: 0.6,
     });
+    lastSelectedVenueIdRef.current = selectedVenue.id;
   }, [map, selectedVenue]);
 
   return null;

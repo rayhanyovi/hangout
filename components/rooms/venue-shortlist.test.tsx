@@ -3,6 +3,19 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 import type { RankedVenue } from "@/lib/rooms";
+import type { SelectOption } from "@/components/ui/select";
+
+const CATEGORY_OPTIONS: SelectOption[] = [
+  { label: "Semua kategori", value: "all" },
+  { label: "Cafe", value: "cafe" },
+  { label: "Restaurant", value: "restaurant" },
+];
+
+const RADIUS_OPTIONS: SelectOption[] = [
+  { label: "500 m", value: "500" },
+  { label: "1 km", value: "1000" },
+  { label: "2 km", value: "2000" },
+];
 
 const VENUE: RankedVenue = {
   venueId: "venue-1",
@@ -28,21 +41,22 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[]}
         activeCategories={[]}
-        onToggleCategory={vi.fn()}
-        onSelectRadius={vi.fn()}
+        selectedCategory="all"
+        selectedRadius="2000"
+        categoryOptions={CATEGORY_OPTIONS}
+        radiusOptions={RADIUS_OPTIONS}
+        onCategoryChange={vi.fn()}
+        onRadiusChange={vi.fn()}
         onSelectVenue={vi.fn()}
         isLoading={false}
         errorMessage={null}
-        categories={["cafe", "restaurant"]}
-        radiusM={2000}
-        radiusOptions={[500, 1000, 2000]}
         hasMidpoint={false}
         selectedVenueId={null}
       />,
     );
 
     expect(
-      screen.getByText(/venue retrieval starts after at least two members/i),
+      screen.getByText(/setelah minimal dua orang membagikan lokasi/i),
     ).toBeInTheDocument();
   });
 
@@ -51,21 +65,22 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[VENUE]}
         activeCategories={["restaurant"]}
-        onToggleCategory={vi.fn()}
-        onSelectRadius={vi.fn()}
+        selectedCategory="restaurant"
+        selectedRadius="2000"
+        categoryOptions={CATEGORY_OPTIONS}
+        radiusOptions={RADIUS_OPTIONS}
+        onCategoryChange={vi.fn()}
+        onRadiusChange={vi.fn()}
         onSelectVenue={vi.fn()}
         isLoading={false}
         errorMessage={null}
-        categories={["cafe", "restaurant"]}
-        radiusM={2000}
-        radiusOptions={[500, 1000, 2000]}
         hasMidpoint
         selectedVenueId={null}
       />,
     );
 
     expect(
-      screen.getByText(/no venues matched the current category filters/i),
+      screen.getByText(/belum ada tempat yang cocok dengan filter yang dipilih/i),
     ).toBeInTheDocument();
   });
 
@@ -74,14 +89,15 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[]}
         activeCategories={[]}
-        onToggleCategory={vi.fn()}
-        onSelectRadius={vi.fn()}
+        selectedCategory="all"
+        selectedRadius="2000"
+        categoryOptions={CATEGORY_OPTIONS}
+        radiusOptions={RADIUS_OPTIONS}
+        onCategoryChange={vi.fn()}
+        onRadiusChange={vi.fn()}
         onSelectVenue={vi.fn()}
         isLoading={false}
         errorMessage="Venue provider request failed."
-        categories={["cafe"]}
-        radiusM={2000}
-        radiusOptions={[500, 1000, 2000]}
         hasMidpoint
         selectedVenueId={null}
       />,
@@ -94,30 +110,37 @@ describe("VenueShortlist", () => {
 
   it("lets the room shell update live search controls", async () => {
     const user = userEvent.setup();
-    const onToggleCategory = vi.fn();
-    const onSelectRadius = vi.fn();
+    const onCategoryChange = vi.fn();
+    const onRadiusChange = vi.fn();
 
     render(
       <VenueShortlist
         venues={[VENUE]}
         activeCategories={["cafe"]}
-        onToggleCategory={onToggleCategory}
-        onSelectRadius={onSelectRadius}
+        selectedCategory="cafe"
+        selectedRadius="2000"
+        categoryOptions={CATEGORY_OPTIONS}
+        radiusOptions={RADIUS_OPTIONS}
+        onCategoryChange={onCategoryChange}
+        onRadiusChange={onRadiusChange}
         onSelectVenue={vi.fn()}
         isLoading={false}
         errorMessage={null}
-        categories={["cafe", "restaurant"]}
-        radiusM={2000}
-        radiusOptions={[500, 1000, 2000]}
         hasMidpoint
         selectedVenueId={VENUE.venueId}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Restaurant" }));
-    await user.click(screen.getByRole("button", { name: "1 km" }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter kategori venue" }),
+      "restaurant",
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter radius venue" }),
+      "1000",
+    );
 
-    expect(onToggleCategory).toHaveBeenCalledWith("restaurant");
-    expect(onSelectRadius).toHaveBeenCalledWith(1000);
+    expect(onCategoryChange).toHaveBeenCalledWith("restaurant");
+    expect(onRadiusChange).toHaveBeenCalledWith("1000");
   });
 });

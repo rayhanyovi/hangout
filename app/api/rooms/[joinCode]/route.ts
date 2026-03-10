@@ -40,6 +40,7 @@ export async function PATCH(
   const payload = await request.json();
   const parsed = updateMemberLocationSchema.safeParse({
     roomId: payload.roomId ?? joinCode.toUpperCase(),
+    actorMemberId: payload.actorMemberId,
     memberId: payload.memberId,
     location: payload.location,
   });
@@ -62,6 +63,7 @@ export async function PATCH(
   try {
     const output = await updateMemberLocation(
       joinCode.toUpperCase(),
+      parsed.data.actorMemberId,
       parsed.data.memberId,
       parsed.data.location,
     );
@@ -70,6 +72,7 @@ export async function PATCH(
   } catch (error) {
     logOperationalEvent("location_update_failed", {
       joinCode: joinCode.toUpperCase(),
+      actorMemberId: parsed.data.actorMemberId,
       memberId: parsed.data.memberId,
       errorCode: "update_failed",
       message:
