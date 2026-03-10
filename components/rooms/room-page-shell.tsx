@@ -10,13 +10,14 @@ import {
   type VenueCategory,
 } from "@/lib/contracts";
 import {
+  buildMidpointFairnessSummary,
   buildDraftRoomMembers,
   createPendingDraftRoomMember,
   memberHasLocation,
   type DraftRoomMember,
   type DraftRoomSeed,
 } from "@/lib/rooms";
-import { computeGeometricMedian, haversineKm } from "@/lib/math";
+import { haversineKm } from "@/lib/math";
 import { RoomMap } from "@/components/maps/room-map";
 import { RoomMemberManager } from "@/components/rooms/room-member-manager";
 
@@ -82,22 +83,12 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
       })),
     [members],
   );
-  const midpoint = useMemo(() => {
-    if (mappedMembers.length < 2) {
-      return null;
-    }
-
-    return computeGeometricMedian(mappedMembers);
-  }, [mappedMembers]);
+  const fairnessSummary = useMemo(
+    () => buildMidpointFairnessSummary(mappedMembers),
+    [mappedMembers],
+  );
+  const midpoint = fairnessSummary.midpoint;
   const venues = buildVenuePreview(draftSeed);
-
-  const fairnessRows = midpoint
-    ? mappedMembers.map((member) => ({
-        id: member.id,
-        name: member.name,
-        distanceKm: haversineKm(midpoint, { lat: member.lat, lng: member.lng }),
-      }))
-    : [];
 
   const inviteLink = getRoomRoute(joinCode);
 
@@ -278,23 +269,52 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                   Fairness shell
                 </p>
-                {fairnessRows.length > 0 ? (
-                  <div className="mt-5 space-y-3">
-                    {fairnessRows.map((row) => (
-                      <div key={row.id}>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-foreground">{row.name}</span>
-                          <span className="text-muted">{row.distanceKm.toFixed(1)} km</span>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
-                          <div
-                            className="h-full rounded-full bg-teal"
-                            style={{ width: `${Math.min(100, (row.distanceKm / 12) * 100)}%` }}
-                          />
-                        </div>
+                {fairnessSummary.rows.length > 0 ? (
+                  <>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                          Midpoint
+                        </p>
+                        <p className="mt-2 font-mono text-xs text-foreground">
+                          {midpoint?.lat.toFixed(4)}, {midpoint?.lng.toFixed(4)}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                          Average detour
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-foreground">
+                          {fairnessSummary.averageDistanceKm?.toFixed(1)} km
+                        </p>
+                      </div>
+                      <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                          Distance spread
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-foreground">
+                          {fairnessSummary.spreadKm?.toFixed(1)} km
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {fairnessSummary.rows.map((row) => (
+                        <div key={row.id}>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground">{row.name}</span>
+                            <span className="text-muted">{row.distanceKm.toFixed(1)} km</span>
+                          </div>
+                          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
+                            <div
+                              className="h-full rounded-full bg-teal"
+                              style={{ width: `${Math.min(100, (row.distanceKm / 12) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <p className="mt-5 text-sm leading-7 text-muted">
                     Fairness summary will appear after at least two members have

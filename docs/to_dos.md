@@ -48,7 +48,7 @@ Checklist convention:
 - [x] Build the room page route and shell
 - [x] Migrate member management UI from the prototype into root Next.js
 - [x] Implement privacy-aware location input flows
-- [ ] Implement midpoint computation and fairness summary
+- [x] Implement midpoint computation and fairness summary
 - [ ] Implement venue retrieval, scoring, filtering, and list rendering
 - [ ] Implement the map experience with members, midpoint, radius, and venues
 - [ ] Implement shareable room links with real join codes
