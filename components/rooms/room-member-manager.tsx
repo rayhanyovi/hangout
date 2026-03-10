@@ -5,6 +5,7 @@ import {
   Check,
   Crosshair,
   Loader2,
+  Map,
   MapPinned,
   Plus,
   Trash2,
@@ -12,14 +13,15 @@ import {
   X,
 } from "lucide-react";
 import {
-  applyPrivacyModeToLocation,
   PRIVACY_RULES,
+  type Coordinate,
   type LocationSource,
   type MemberLocation,
   type PrivacyMode,
 } from "@/lib/contracts";
-import type { DraftRoomMember } from "@/lib/rooms";
-import { joinRoomSchema, updateMemberLocationSchema } from "@/lib/validation";
+import { LocationPickerMap } from "@/components/maps/location-picker-map";
+import { createValidatedMemberLocation, type DraftRoomMember } from "@/lib/rooms";
+import { joinRoomSchema } from "@/lib/validation";
 
 type RoomMemberManagerProps = {
   inviteLink: string;
@@ -36,7 +38,6 @@ type RoomMemberManagerProps = {
 };
 
 const displayNameSchema = joinRoomSchema.shape.displayName;
-const locationSchema = updateMemberLocationSchema.shape.location;
 
 export function RoomMemberManager({
   inviteLink,
@@ -54,11 +55,24 @@ export function RoomMemberManager({
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
+  const [pickedCoordinate, setPickedCoordinate] = useState<Coordinate | null>(null);
 
   const sharedCount = members.filter((member) => member.location !== null).length;
   const pendingCount = members.length - sharedCount;
   const privacyRule = PRIVACY_RULES[privacyMode];
   const isLiveMode = mode === "live";
+
+  const updateDraftCoordinate = (nextLat: string, nextLng: string) => {
+    const lat = Number(nextLat);
+    const lng = Number(nextLng);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      setPickedCoordinate(null);
+      return;
+    }
+
+    setPickedCoordinate({ lat, lng });
+  };
 
   const handleAddMember = () => {
     if (!onAddMember) {
@@ -86,23 +100,27 @@ export function RoomMemberManager({
       accuracyM?: number;
     },
   ) => {
-    const parsed = locationSchema.safeParse(
-      applyPrivacyModeToLocation(
-        {
-          ...locationInput,
-          updatedAt: new Date().toISOString(),
-        },
-        privacyMode,
-      ),
-    );
+    let location: MemberLocation;
 
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Location is not valid.");
+    try {
+      location = createValidatedMemberLocation({
+        accuracyM: locationInput.accuracyM,
+        lat: locationInput.lat,
+        lng: locationInput.lng,
+        privacyMode,
+        source: locationInput.source,
+      });
+    } catch (locationError) {
+      setError(
+        locationError instanceof Error
+          ? locationError.message
+          : "Location is not valid.",
+      );
       return false;
     }
 
     setError(null);
-    await onUpdateMemberLocation(memberId, parsed.data);
+    await onUpdateMemberLocation(memberId, location);
     return true;
   };
 
@@ -140,6 +158,15 @@ export function RoomMemberManager({
     setEditingMemberId(member.id);
     setManualLat(member.location ? String(member.location.lat) : "");
     setManualLng(member.location ? String(member.location.lng) : "");
+    setPickedCoordinate(
+      member.location
+        ? {
+            lat: member.location.lat,
+            lng: member.location.lng,
+          }
+        : null,
+    );
+    setError(null);
   };
 
   const handleManualSave = async (memberId: string) => {
@@ -159,6 +186,7 @@ export function RoomMemberManager({
 
     if (success) {
       setEditingMemberId(null);
+      setPickedCoordinate(null);
     }
   };
 
@@ -342,6 +370,16 @@ export function RoomMemberManager({
                   <MapPinned className="h-3.5 w-3.5" />
                   Enter coordinates
                 </button>
+                <button
+                  type="button"
+                  onClick={() => startManualEdit(member)}
+                  data-testid={`member-pin-on-map-${member.id}`}
+                  disabled={locationLocked || !canUpdateThisMember}
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Map className="h-3.5 w-3.5" />
+                  Pin on map
+                </button>
               </div>
 
               {locationLocked ? (
@@ -357,44 +395,72 @@ export function RoomMemberManager({
               ) : null}
 
               {editingMemberId === member.id ? (
-                <div className="mt-4 grid gap-3 rounded-[1.2rem] border border-line bg-surface p-4 sm:grid-cols-[1fr_1fr_auto_auto]">
-                  <input
-                    data-testid={`member-latitude-${member.id}`}
-                    value={manualLat}
-                    onChange={(event) => setManualLat(event.target.value)}
-                    placeholder="Latitude"
-                    className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
-                  />
-                  <input
-                    data-testid={`member-longitude-${member.id}`}
-                    value={manualLng}
-                    onChange={(event) => setManualLng(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        void handleManualSave(member.id);
-                      }
+                <div className="mt-4 space-y-4 rounded-[1.2rem] border border-line bg-surface p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      data-testid={`member-latitude-${member.id}`}
+                      value={manualLat}
+                      onChange={(event) => {
+                        const nextLat = event.target.value;
+                        setManualLat(nextLat);
+                        updateDraftCoordinate(nextLat, manualLng);
+                      }}
+                      placeholder="Latitude"
+                      className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+                    />
+                    <input
+                      data-testid={`member-longitude-${member.id}`}
+                      value={manualLng}
+                      onChange={(event) => {
+                        const nextLng = event.target.value;
+                        setManualLng(nextLng);
+                        updateDraftCoordinate(manualLat, nextLng);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void handleManualSave(member.id);
+                        }
+                      }}
+                      placeholder="Longitude"
+                      className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+                    />
+                  </div>
+
+                  <LocationPickerMap
+                    initialCenter={pickedCoordinate}
+                    onPick={(coordinate) => {
+                      setManualLat(String(coordinate.lat));
+                      setManualLng(String(coordinate.lng));
+                      setPickedCoordinate(coordinate);
+                      setError(null);
                     }}
-                    placeholder="Longitude"
-                    className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+                    selectedCoordinate={pickedCoordinate}
+                    testId={`location-picker-map-${member.id}`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => void handleManualSave(member.id)}
-                    data-testid={`member-save-location-${member.id}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
-                  >
-                    <Check className="h-4 w-4" />
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingMemberId(null)}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
-                  >
-                    <X className="h-4 w-4" />
-                    Cancel
-                  </button>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleManualSave(member.id)}
+                      data-testid={`member-save-location-${member.id}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                    >
+                      <Check className="h-4 w-4" />
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingMemberId(null);
+                        setPickedCoordinate(null);
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                    >
+                      <X className="h-4 w-4" />
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>

@@ -24,6 +24,7 @@ This repository now has one active application state:
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Local browser-level smoke coverage now exists for the create, join, location share, vote, finalize, and decision flow via Playwright
+- Member location input now supports pin-on-map selection in addition to GPS capture and raw coordinate entry
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
@@ -97,7 +98,7 @@ Prototype architecture during the audit:
 Important product requirements that are still missing:
 
 - Transport-aware routing or ETA-based fairness; current fairness still uses geometric distance only
-- Address search / pin-on-map flow beyond raw latitude and longitude input
+- Address search beyond raw latitude and longitude input
 - Environment hardening, deployment assumptions, and final Vercel rollout sign-off
 
 In short: the root app now holds the MVP-complete implementation path, while the old prototype remains only as documented history.

@@ -23,6 +23,37 @@ async function setManualCoordinates(
   ]);
 }
 
+async function setLocationFromMapPin(page: Page, memberId: string) {
+  const memberCard = page.getByTestId(`member-card-${memberId}`);
+
+  await expect(memberCard).toBeVisible();
+  await memberCard.getByTestId(`member-pin-on-map-${memberId}`).click();
+  await memberCard
+    .getByTestId(`location-picker-map-${memberId}`)
+    .locator(".leaflet-container")
+    .click({
+      position: {
+        x: 180,
+        y: 120,
+      },
+    });
+  await expect(memberCard.getByTestId(`member-latitude-${memberId}`)).not.toHaveValue(
+    "",
+  );
+  await expect(memberCard.getByTestId(`member-longitude-${memberId}`)).not.toHaveValue(
+    "",
+  );
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "PATCH" &&
+        response.url().includes("/api/rooms/") &&
+        response.ok(),
+    ),
+    memberCard.getByTestId(`member-save-location-${memberId}`).click(),
+  ]);
+}
+
 test("core room flow works across create, join, vote, and finalize", async ({
   browser,
   baseURL,
@@ -61,7 +92,7 @@ test("core room flow works across create, join, vote, and finalize", async ({
 
   expect(memberId).toBeTruthy();
 
-  await setManualCoordinates(hostPage, hostMemberId!, "-6.2000", "106.8167");
+  await setLocationFromMapPin(hostPage, hostMemberId!);
   await setManualCoordinates(memberPage, memberId!, "-6.2297", "106.8300");
 
   await expect(hostPage.getByTestId("venue-card-kopi-tengah")).toBeVisible();
