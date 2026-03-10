@@ -250,6 +250,13 @@ export function RoomPageShell({
     setRoomScheduledLabel(snapshot.room.scheduledLabel ?? "");
     setSavedRoomDescription(snapshot.room.description ?? "");
     setSavedRoomScheduledLabel(snapshot.room.scheduledLabel ?? "");
+
+    if (snapshot.venues.length > 0) {
+      setVenues(snapshot.venues as RankedVenue[]);
+      setVenueError(null);
+      setVenueStatus("success");
+      setIsVenueLoading(false);
+    }
   };
 
   const handleAddMember = (displayName: string) => {
@@ -1045,7 +1052,7 @@ export function RoomPageShell({
             />
           ) : null}
 
-          {venueStatus === "timeout" ? (
+          {venueStatus === "timeout" && venues.length === 0 ? (
             <RoomStatusBanner
               tone="warning"
               title="Pencarian tempat lebih lama dari biasanya."
@@ -1055,7 +1062,7 @@ export function RoomPageShell({
             />
           ) : null}
 
-          {venueStatus === "error" && venueError ? (
+          {venueStatus === "error" && venueError && venues.length === 0 ? (
             <RoomStatusBanner
               tone="error"
               title="Tempat belum berhasil dimuat."
@@ -1085,7 +1092,7 @@ export function RoomPageShell({
               onRadiusChange={(value) => setSearchRadiusM(Number(value))}
               onSelectVenue={setSelectedVenueId}
               isLoading={isVenueLoading}
-              errorMessage={venueError}
+              errorMessage={venues.length === 0 ? venueError : null}
               hasMidpoint={midpoint !== null}
               selectedVenueId={selectedVenueId}
               votes={isLiveRoom ? votes : []}
