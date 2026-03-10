@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logOperationalEvent } from "@/lib/server/observability/logger";
-import { getRoomSnapshot, updateMemberLocation } from "@/lib/server/rooms/repository";
-import { updateMemberLocationSchema } from "@/lib/validation";
+import {
+  getRoomSnapshot,
+  updateMemberLocation,
+  updateRoomDetails,
+} from "@/lib/server/rooms/repository";
+import { updateMemberLocationSchema, updateRoomDetailsSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,15 +42,74 @@ export async function PATCH(
 ) {
   const { joinCode } = await context.params;
   const payload = await request.json();
-  const parsed = updateMemberLocationSchema.safeParse({
+
+  if (payload.location) {
+    const parsed = updateMemberLocationSchema.safeParse({
+      roomId: payload.roomId ?? joinCode.toUpperCase(),
+      actorMemberId: payload.actorMemberId,
+      memberId: payload.memberId,
+      location: payload.location,
+    });
+
+    if (!parsed.success) {
+      logOperationalEvent("location_update_invalid_payload", {
+        joinCode: joinCode.toUpperCase(),
+        issueCount: parsed.error.issues.length,
+      });
+
+      return NextResponse.json(
+        {
+          error: "invalid_payload",
+          details: parsed.error.flatten(),
+        },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const output = await updateMemberLocation(
+        joinCode.toUpperCase(),
+        parsed.data.actorMemberId,
+        parsed.data.memberId,
+        parsed.data.location,
+      );
+
+      return NextResponse.json(output);
+    } catch (error) {
+      logOperationalEvent("location_update_failed", {
+        joinCode: joinCode.toUpperCase(),
+        actorMemberId: parsed.data.actorMemberId,
+        memberId: parsed.data.memberId,
+        errorCode: "update_failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Location update request failed.",
+      });
+
+      return NextResponse.json(
+        {
+          error: "update_failed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Location update request failed.",
+        },
+        { status: 404 },
+      );
+    }
+  }
+
+  const parsed = updateRoomDetailsSchema.safeParse({
     roomId: payload.roomId ?? joinCode.toUpperCase(),
     actorMemberId: payload.actorMemberId,
-    memberId: payload.memberId,
-    location: payload.location,
+    title: payload.title,
+    description: payload.description,
+    scheduledLabel: payload.scheduledLabel,
   });
 
   if (!parsed.success) {
-    logOperationalEvent("location_update_invalid_payload", {
+    logOperationalEvent("room_details_update_invalid_payload", {
       joinCode: joinCode.toUpperCase(),
       issueCount: parsed.error.issues.length,
     });
@@ -61,24 +124,26 @@ export async function PATCH(
   }
 
   try {
-    const output = await updateMemberLocation(
+    const output = await updateRoomDetails(
       joinCode.toUpperCase(),
       parsed.data.actorMemberId,
-      parsed.data.memberId,
-      parsed.data.location,
+      {
+        title: parsed.data.title,
+        description: parsed.data.description,
+        scheduledLabel: parsed.data.scheduledLabel,
+      },
     );
 
     return NextResponse.json(output);
   } catch (error) {
-    logOperationalEvent("location_update_failed", {
+    logOperationalEvent("room_details_update_failed", {
       joinCode: joinCode.toUpperCase(),
       actorMemberId: parsed.data.actorMemberId,
-      memberId: parsed.data.memberId,
       errorCode: "update_failed",
       message:
         error instanceof Error
           ? error.message
-          : "Location update request failed.",
+          : "Room details update failed.",
     });
 
     return NextResponse.json(
@@ -87,7 +152,7 @@ export async function PATCH(
         message:
           error instanceof Error
             ? error.message
-            : "Location update request failed.",
+            : "Room details update failed.",
       },
       { status: 404 },
     );

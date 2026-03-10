@@ -28,6 +28,8 @@ export const ROOM_FLOW_OPERATIONS = [
 
 export type CreateRoomInput = {
   title: string | null;
+  description?: string | null;
+  scheduledLabel?: string | null;
   hostDisplayName: string;
   transportMode: TransportMode;
   privacyMode: PrivacyMode;
@@ -78,6 +80,18 @@ export type UpdateMemberLocationInput = {
 };
 
 export type UpdateMemberLocationOutput = {
+  snapshot: RoomSnapshot;
+};
+
+export type UpdateRoomDetailsInput = {
+  roomId: RoomId;
+  actorMemberId: MemberId;
+  title?: string | null;
+  description?: string | null;
+  scheduledLabel?: string | null;
+};
+
+export type UpdateRoomDetailsOutput = {
   snapshot: RoomSnapshot;
 };
 

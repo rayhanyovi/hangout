@@ -101,6 +101,8 @@ export type Room = {
   roomId: RoomId;
   joinCode: JoinCode;
   title: string | null;
+  description: string | null;
+  scheduledLabel: string | null;
   createdAt: string;
   expiresAt: string;
   createdByMemberId: MemberId;

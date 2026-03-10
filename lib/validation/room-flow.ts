@@ -14,6 +14,8 @@ const coordinateSchema = z.object({
 
 export const createRoomSchema = z.object({
   title: z.string().trim().min(1).max(80).nullable(),
+  description: z.string().trim().max(240).nullable().optional(),
+  scheduledLabel: z.string().trim().max(80).nullable().optional(),
   hostDisplayName: z.string().trim().min(1).max(40),
   transportMode: z.enum(TRANSPORT_MODES),
   privacyMode: z.enum(PRIVACY_MODES),
@@ -45,6 +47,14 @@ export const updateMemberLocationSchema = z.object({
     accuracyM: z.number().positive().optional(),
     updatedAt: z.string().datetime(),
   }),
+});
+
+export const updateRoomDetailsSchema = z.object({
+  roomId: identifierSchema,
+  actorMemberId: identifierSchema,
+  title: z.string().trim().max(80).nullable().optional(),
+  description: z.string().trim().max(240).nullable().optional(),
+  scheduledLabel: z.string().trim().max(80).nullable().optional(),
 });
 
 export const castVoteSchema = z.object({

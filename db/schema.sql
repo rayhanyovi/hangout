@@ -7,6 +7,8 @@ create table if not exists rooms (
   room_id text primary key,
   join_code text not null unique,
   title text null,
+  description text null,
+  scheduled_label text null,
   created_at timestamptz not null,
   expires_at timestamptz not null,
   created_by_member_id text not null,

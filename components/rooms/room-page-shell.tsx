@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, Crosshair } from "lucide-react";
+import { Check, Copy, Crosshair, Pencil, X } from "lucide-react";
 import {
   type AddRoomMemberOutput,
   getRoomDecisionRoute,
@@ -31,6 +31,7 @@ import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import type { SelectOption } from "@/components/ui/select";
 
@@ -60,6 +61,11 @@ type VoteMutationResponse = {
   message?: string;
 };
 
+type RoomDetailsMutationResponse = {
+  snapshot: RoomSnapshot;
+  message?: string;
+};
+
 type AddMemberResponse = AddRoomMemberOutput & {
   message?: string;
 };
@@ -83,15 +89,32 @@ export function RoomPageShell({
   const [isVenueLoading, setIsVenueLoading] = useState(false);
   const [venueError, setVenueError] = useState<string | null>(null);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [selectedVenueCategory, setSelectedVenueCategory] = useState<string>(
-    () => draftSeed.categories[0] ?? "all",
+  const [selectedVenueCategories, setSelectedVenueCategories] = useState<string[]>(
+    () => draftSeed.categories,
   );
   const [searchRadiusM, setSearchRadiusM] = useState(draftSeed.radiusMDefault);
+  const [roomTitle, setRoomTitle] = useState(draftSeed.title ?? "");
+  const [roomDescription, setRoomDescription] = useState(
+    draftSeed.description ?? "",
+  );
+  const [roomScheduledLabel, setRoomScheduledLabel] = useState(
+    draftSeed.scheduledLabel ?? "",
+  );
+  const [savedRoomDescription, setSavedRoomDescription] = useState(
+    draftSeed.description ?? "",
+  );
+  const [savedRoomScheduledLabel, setSavedRoomScheduledLabel] = useState(
+    draftSeed.scheduledLabel ?? "",
+  );
+  const [isSavingRoomDetails, setIsSavingRoomDetails] = useState(false);
+  const [isEditingRoomDetails, setIsEditingRoomDetails] = useState(false);
   const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
   const [roomSyncStatus, setRoomSyncStatus] = useState<AsyncStatus>(
     isLiveRoom ? "loading" : "success",
   );
-  const [votes, setVotes] = useState<Vote[]>(() => liveRoomContext?.initialVotes ?? []);
+  const [votes, setVotes] = useState<Vote[]>(
+    () => liveRoomContext?.initialVotes ?? [],
+  );
   const [finalizedVenueId, setFinalizedVenueId] = useState<string | null>(
     () => liveRoomContext?.finalizedVenueId ?? null,
   );
@@ -101,7 +124,9 @@ export function RoomPageShell({
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [membersFocusRequestKey, setMembersFocusRequestKey] = useState(0);
-  const [membersFocusMemberId, setMembersFocusMemberId] = useState<string | null>(null);
+  const [membersFocusMemberId, setMembersFocusMemberId] = useState<
+    string | null
+  >(null);
   const previousFinalizedVenueIdRef = useRef<string | null>(
     liveRoomContext?.finalizedVenueId ?? null,
   );
@@ -129,10 +154,11 @@ export function RoomPageShell({
   const midpointLng = midpoint?.lng ?? null;
   const activeVenueCategories = useMemo<VenueCategory[]>(
     () =>
-      selectedVenueCategory === "all"
-        ? []
-        : [selectedVenueCategory as VenueCategory],
-    [selectedVenueCategory],
+      selectedVenueCategories.filter(
+        (category): category is VenueCategory =>
+          VENUE_CATEGORIES.includes(category as VenueCategory),
+      ),
+    [selectedVenueCategories],
   );
   const searchCategoryParam = activeVenueCategories.join(",");
   const requestedTagParam = draftSeed.tags.join(",");
@@ -141,16 +167,11 @@ export function RoomPageShell({
     [],
   );
   const venueCategorySelectOptions = useMemo<SelectOption[]>(
-    () => [
-      {
-        label: "Semua kategori",
-        value: "all",
-      },
-      ...searchCategoryOptions.map((category) => ({
+    () =>
+      searchCategoryOptions.map((category) => ({
         label: category[0]?.toUpperCase() + category.slice(1),
         value: category,
       })),
-    ],
     [searchCategoryOptions],
   );
   const venueRadiusSelectOptions = useMemo<SelectOption[]>(
@@ -178,12 +199,54 @@ export function RoomPageShell({
     venueError === null &&
     venues.length === 0 &&
     venueStatus !== "loading";
-  const sharedCount = members.filter((member) => member.location !== null).length;
+  const sharedCount = members.filter(
+    (member) => member.location !== null,
+  ).length;
   const pendingCount = members.length - sharedCount;
+  const fallbackRoomDescription =
+    "Kumpulkan lokasi semua orang, lihat titik temu yang adil, lalu pilih tempat yang paling cocok bareng-bareng.";
+  const displayedRoomDescription =
+    roomDescription.trim() || fallbackRoomDescription;
+  const displayedScheduledLabel = roomScheduledLabel.trim() || "tentative";
+  const formattedScheduledLabel = useMemo(() => {
+    const trimmedValue = displayedScheduledLabel.trim();
+
+    if (!trimmedValue || trimmedValue === "tentative") {
+      return "tentative";
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+      const date = new Date(`${trimmedValue}T00:00:00`);
+
+      if (!Number.isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(date);
+      }
+    }
+
+    return trimmedValue;
+  }, [displayedScheduledLabel]);
+
+  const syncRoomSnapshotState = (snapshot: RoomSnapshot) => {
+    setMembers(mapSnapshotMembersToDraftMembers(snapshot));
+    setVotes(snapshot.votes);
+    setFinalizedVenueId(snapshot.room.finalizedDecision?.venueId ?? null);
+    setRoomTitle(snapshot.room.title ?? "");
+    setRoomDescription(snapshot.room.description ?? "");
+    setRoomScheduledLabel(snapshot.room.scheduledLabel ?? "");
+    setSavedRoomDescription(snapshot.room.description ?? "");
+    setSavedRoomScheduledLabel(snapshot.room.scheduledLabel ?? "");
+  };
 
   const handleAddMember = (displayName: string) => {
     if (!isLiveRoom) {
-      setMembers((current) => [...current, createPendingDraftRoomMember(displayName)]);
+      setMembers((current) => [
+        ...current,
+        createPendingDraftRoomMember(displayName),
+      ]);
       return;
     }
 
@@ -220,9 +283,7 @@ export function RoomPageShell({
           throw new Error(payload.message ?? "Gagal menambahkan anggota.");
         }
 
-        setMembers(mapSnapshotMembersToDraftMembers(payload.snapshot));
-        setVotes(payload.snapshot.votes);
-        setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+        syncRoomSnapshotState(payload.snapshot);
         setRoomSyncError(null);
         setRoomSyncStatus("success");
       } catch (error) {
@@ -246,7 +307,9 @@ export function RoomPageShell({
     }
 
     setMembers((current) =>
-      current.filter((member) => member.id !== memberId || member.role === "host"),
+      current.filter(
+        (member) => member.id !== memberId || member.role === "host",
+      ),
     );
   };
 
@@ -291,7 +354,7 @@ export function RoomPageShell({
                   : "Pinned manually in the room shell",
             }
           : member,
-        ),
+      ),
     );
     setRoomSyncError(null);
 
@@ -321,9 +384,7 @@ export function RoomPageShell({
         throw new Error(payload.message ?? "Location update failed.");
       }
 
-      setMembers(mapSnapshotMembersToDraftMembers(payload.snapshot));
-      setVotes(payload.snapshot.votes);
-      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+      syncRoomSnapshotState(payload.snapshot);
       setRoomSyncError(null);
       setRoomSyncStatus("success");
     } catch (error) {
@@ -372,8 +433,7 @@ export function RoomPageShell({
         throw new Error(payload.message ?? "Vote update failed.");
       }
 
-      setVotes(payload.snapshot.votes);
-      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+      syncRoomSnapshotState(payload.snapshot);
       setVoteError(null);
     } catch (error) {
       setVoteError(
@@ -421,8 +481,7 @@ export function RoomPageShell({
         throw new Error(payload.message ?? "Room finalization failed.");
       }
 
-      setVotes(payload.snapshot.votes);
-      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+      syncRoomSnapshotState(payload.snapshot);
       setVoteError(null);
     } catch (error) {
       setVoteError(
@@ -490,9 +549,7 @@ export function RoomPageShell({
         const snapshot = payload as RoomSnapshot;
 
         if (!cancelled) {
-          setMembers(mapSnapshotMembersToDraftMembers(snapshot));
-          setVotes(snapshot.votes);
-          setFinalizedVenueId(snapshot.room.finalizedDecision?.venueId ?? null);
+          syncRoomSnapshotState(snapshot);
           setRoomSyncError(null);
           setRoomSyncStatus("success");
         }
@@ -531,7 +588,11 @@ export function RoomPageShell({
   }, [isLiveRoom, joinCode]);
 
   useEffect(() => {
-    if (mappedMembers.length < 2 || midpointLat === null || midpointLng === null) {
+    if (
+      mappedMembers.length < 2 ||
+      midpointLat === null ||
+      midpointLng === null
+    ) {
       setVenues([]);
       setIsVenueLoading(false);
       setVenueError(null);
@@ -567,10 +628,13 @@ export function RoomPageShell({
 
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`/api/venues/search?${params.toString()}`, {
-          signal: controller.signal,
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/api/venues/search?${params.toString()}`,
+          {
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
         const payload = (await response.json()) as VenueSearchResponse;
 
         if (!response.ok) {
@@ -583,7 +647,9 @@ export function RoomPageShell({
       } catch (error) {
         if (controller.signal.aborted) {
           if (didTimeout) {
-            setVenueError("Venue provider timed out before results were ready.");
+            setVenueError(
+              "Venue provider timed out before results were ready.",
+            );
             setVenues([]);
             setVenueStatus("timeout");
           }
@@ -629,17 +695,14 @@ export function RoomPageShell({
     setSelectedVenueId((current) =>
       current && venues.some((venue) => venue.venueId === current)
         ? current
-        : venues[0]?.venueId ?? null,
+        : (venues[0]?.venueId ?? null),
     );
   }, [venues]);
 
   useEffect(() => {
     const previousFinalizedVenueId = previousFinalizedVenueIdRef.current;
 
-    if (
-      finalizedVenueId &&
-      finalizedVenueId !== previousFinalizedVenueId
-    ) {
+    if (finalizedVenueId && finalizedVenueId !== previousFinalizedVenueId) {
       const finalizedVenueName =
         venues.find((venue) => venue.venueId === finalizedVenueId)?.name ??
         "pilihan akhir";
@@ -678,6 +741,54 @@ export function RoomPageShell({
     }
   };
 
+  const handleSaveRoomDetails = async () => {
+    if (!isLiveRoom || !currentMemberId || !isCurrentMemberHost) {
+      return;
+    }
+
+    setIsSavingRoomDetails(true);
+    setRoomSyncError(null);
+
+    try {
+      const response = await fetch(`/api/rooms/${joinCode}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          actorMemberId: currentMemberId,
+          title: roomTitle.trim() || null,
+          description: roomDescription.trim() || null,
+          scheduledLabel: roomScheduledLabel.trim() || null,
+        }),
+      });
+      const payload = (await response.json()) as RoomDetailsMutationResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Detail room belum berhasil disimpan.");
+      }
+
+      syncRoomSnapshotState(payload.snapshot);
+      setRoomSyncError(null);
+      setRoomSyncStatus("success");
+      setIsEditingRoomDetails(false);
+      toast({
+        tone: "success",
+        title: "Detail room disimpan",
+        description: "Deskripsi dan waktu room sudah diperbarui.",
+      });
+    } catch (error) {
+      setRoomSyncError(
+        error instanceof Error
+          ? error.message
+          : "Detail room belum berhasil disimpan.",
+      );
+      setRoomSyncStatus("error");
+    } finally {
+      setIsSavingRoomDetails(false);
+    }
+  };
+
   const handleOpenMembersModal = (focusMemberId?: string | null) => {
     setMembersFocusMemberId(focusMemberId ?? null);
     setMembersFocusRequestKey((current) => current + 1);
@@ -691,95 +802,177 @@ export function RoomPageShell({
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        <header className="rounded-3xl border border-line bg-surface p-6 shadow-xl">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-            <Card className="rounded-[2rem] p-6 shadow-sm">
-              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-success" />
-                {draftSeed.previewMode ? "Room baru" : "Room aktif"}
-              </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-primary md:text-5xl">
-                {draftSeed.title ?? `Room ${joinCode}`}
-              </h1>
-              <p className="mt-3 max-w-3xl text-base leading-8 text-foreground md:text-lg">
-                Kumpulkan lokasi semua orang, lihat titik temu yang adil, lalu
-                pilih tempat yang paling cocok bareng-bareng.
-              </p>
-            </Card>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          <Card className="relative rounded-[2rem] p-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-success" />
+              {draftSeed.previewMode ? "Room baru" : "Room aktif"}
+            </div>
+            {isCurrentMemberHost ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (isEditingRoomDetails) {
+                    setRoomDescription(savedRoomDescription);
+                    setRoomScheduledLabel(savedRoomScheduledLabel);
+                    setIsEditingRoomDetails(false);
+                    return;
+                  }
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card className="rounded-[2rem] p-5 shadow-sm">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-                  Link undangan
-                </p>
-                <p className="mt-3 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
-                  {inviteLink}
-                </p>
-                <div className="mt-4 flex flex-col gap-2">
-                  <Button
-                    type="button"
-                    onClick={() => void handleCopyInviteLink()}
-                    variant="secondary"
+                  setIsEditingRoomDetails(true);
+                }}
+                className="absolute right-6 top-6"
+                aria-label={
+                  isEditingRoomDetails ? "Batal edit detail room" : "Edit detail room"
+                }
+              >
+                {isEditingRoomDetails ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Pencil className="h-4 w-4" />
+                )}
+              </Button>
+            ) : null}
+            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-primary md:text-5xl">
+              {roomTitle.trim() || `Room ${joinCode}`}
+            </h1>
+            {isEditingRoomDetails ? (
+              <div className="mt-6 grid gap-3 rounded-3xl border border-line bg-surface p-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="room-description"
+                    className="block text-xs font-semibold uppercase tracking-[0.16em] text-primary"
                   >
-                    {inviteCopied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    {inviteCopied ? "Link tersalin" : "Copy link undangan"}
-                  </Button>
-                  <Button asChild>
-                    <Link href={getRoomDecisionRoute(joinCode)}>
-                    Lihat hasil akhir
-                    </Link>
-                  </Button>
+                    Deskripsi
+                  </label>
+                  <textarea
+                    id="room-description"
+                    value={roomDescription}
+                    onChange={(event) => setRoomDescription(event.target.value)}
+                    placeholder={fallbackRoomDescription}
+                    className="min-h-24 w-full rounded-3xl border border-line bg-card px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  />
                 </div>
-              </Card>
-
-              <Card className="rounded-[2rem] p-5 shadow-sm">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-                  Anggota
-                </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
-                  <Button
-                    type="button"
-                    onClick={() => handleOpenMembersModal()}
-                    variant="secondary"
-                    className="h-auto justify-start rounded-2xl p-3 text-left"
+                <div className="space-y-2">
+                  <label
+                    htmlFor="room-scheduled-label"
+                    className="block text-xs font-semibold uppercase tracking-[0.16em] text-primary"
                   >
-                    <span className="block">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Total anggota
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-foreground">{members.length}</p>
-                    </span>
-                  </Button>
-                  <div className="rounded-2xl border border-line bg-surface p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Sudah share
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-foreground">{sharedCount}</p>
-                  </div>
-                  <div className="rounded-2xl border border-line bg-surface p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Belum share
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-foreground">{pendingCount}</p>
-                  </div>
+                    Tanggal
+                  </label>
+                  <Input
+                    id="room-scheduled-label"
+                    type="date"
+                    value={roomScheduledLabel}
+                    onChange={(event) => setRoomScheduledLabel(event.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Kosongkan kalau masih tentative.
+                  </p>
                 </div>
                 <Button
                   type="button"
-                  onClick={() => handleOpenMembersModal(currentMemberId)}
-                  variant="secondary"
-                  className="mt-4 w-full"
+                  onClick={() => void handleSaveRoomDetails()}
+                  disabled={isSavingRoomDetails}
+                  className="w-full sm:w-fit"
                 >
-                  <Crosshair className="h-4 w-4" />
-                  Masukkan lokasi saya
+                  {isSavingRoomDetails ? "Menyimpan..." : "Simpan detail room"}
                 </Button>
-              </Card>
-            </div>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 max-w-3xl text-base leading-8 text-foreground md:text-lg">
+                  {displayedRoomDescription}
+                </p>
+                <p className="mt-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  Tanggal: {formattedScheduledLabel}
+                </p>
+              </>
+            )}
+            {finalizedVenueId ? (
+              <Button asChild className="mt-5">
+                <Link href={getRoomDecisionRoute(joinCode)}>
+                  Lihat hasil akhir
+                </Link>
+              </Button>
+            ) : null}
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-1">
+            <Card className="rounded-[2rem] p-5 shadow-sm">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                Link undangan
+              </p>
+              <p className="mt-3 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
+                https://hangout.rayhan.id/room/{joinCode}
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={() => void handleCopyInviteLink()}
+                  variant="secondary"
+                >
+                  {inviteCopied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {inviteCopied ? "Link tersalin" : "Copy link undangan"}
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="rounded-[2rem] p-5 shadow-sm">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                Anggota
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
+                <Button
+                  type="button"
+                  onClick={() => handleOpenMembersModal()}
+                  variant="secondary"
+                  className="h-auto justify-start rounded-2xl p-3 text-left"
+                >
+                  <span className="block">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Total anggota
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">
+                      {members.length}
+                    </p>
+                  </span>
+                </Button>
+                <div className="rounded-2xl border border-line bg-surface p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Sudah share
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">
+                    {sharedCount}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-line bg-surface p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Belum share
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">
+                    {pendingCount}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleOpenMembersModal(currentMemberId)}
+                variant="secondary"
+                className="mt-4 w-full"
+              >
+                <Crosshair className="h-4 w-4" />
+                Masukkan lokasi saya
+              </Button>
+            </Card>
           </div>
-        </header>
+        </div>
 
         <div className="space-y-4">
           {isLiveRoom && roomSyncStatus === "loading" ? (
@@ -795,8 +988,7 @@ export function RoomPageShell({
               tone="warning"
               title="Room belum selesai dimuat."
               description={
-                roomSyncError ??
-                "Coba tunggu sebentar lalu ulangi lagi."
+                roomSyncError ?? "Coba tunggu sebentar lalu ulangi lagi."
               }
             />
           ) : null}
@@ -811,7 +1003,7 @@ export function RoomPageShell({
 
           {needsMoreLocations ? (
             <RoomStatusBanner
-              tone="info"
+              tone="error"
               title="Butuh minimal dua lokasi."
               description="Minta setidaknya dua orang membagikan lokasi supaya titik temu dan rekomendasi tempat bisa dihitung."
             />
@@ -830,8 +1022,7 @@ export function RoomPageShell({
               tone="warning"
               title="Pencarian tempat lebih lama dari biasanya."
               description={
-                venueError ??
-                "Coba tunggu sebentar atau ubah radius pencarian."
+                venueError ?? "Coba tunggu sebentar atau ubah radius pencarian."
               }
             />
           ) : null}
@@ -858,11 +1049,11 @@ export function RoomPageShell({
             <VenueShortlist
               venues={venues}
               activeCategories={activeVenueCategories}
-              selectedCategory={selectedVenueCategory}
+              selectedCategories={selectedVenueCategories}
               selectedRadius={String(searchRadiusM)}
               categoryOptions={venueCategorySelectOptions}
               radiusOptions={venueRadiusSelectOptions}
-              onCategoryChange={setSelectedVenueCategory}
+              onCategoryChange={setSelectedVenueCategories}
               onRadiusChange={(value) => setSearchRadiusM(Number(value))}
               onSelectVenue={setSelectedVenueId}
               isLoading={isVenueLoading}
@@ -880,7 +1071,7 @@ export function RoomPageShell({
             />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             <RoomMap
               members={mappedMembers}
               midpoint={midpoint}
@@ -937,7 +1128,9 @@ export function RoomPageShell({
                       {fairnessSummary.rows.map((row) => (
                         <div key={row.id}>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-foreground">{row.name}</span>
+                            <span className="font-medium text-foreground">
+                              {row.name}
+                            </span>
                             <span className="text-foreground">
                               {row.distanceKm.toFixed(1)} km
                             </span>
@@ -945,7 +1138,9 @@ export function RoomPageShell({
                           <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-soft">
                             <div
                               className="h-full rounded-full bg-success"
-                              style={{ width: `${Math.min(100, (row.distanceKm / maxDistanceKm) * 100)}%` }}
+                              style={{
+                                width: `${Math.min(100, (row.distanceKm / maxDistanceKm) * 100)}%`,
+                              }}
                             />
                           </div>
                         </div>

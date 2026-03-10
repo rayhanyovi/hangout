@@ -25,7 +25,6 @@ beforeAll(() => {
 });
 
 const CATEGORY_OPTIONS: SelectOption[] = [
-  { label: "Semua kategori", value: "all" },
   { label: "Cafe", value: "cafe" },
   { label: "Restaurant", value: "restaurant" },
 ];
@@ -60,7 +59,7 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[]}
         activeCategories={[]}
-        selectedCategory="all"
+        selectedCategories={[]}
         selectedRadius="2000"
         categoryOptions={CATEGORY_OPTIONS}
         radiusOptions={RADIUS_OPTIONS}
@@ -84,7 +83,7 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[VENUE]}
         activeCategories={["restaurant"]}
-        selectedCategory="restaurant"
+        selectedCategories={["restaurant"]}
         selectedRadius="2000"
         categoryOptions={CATEGORY_OPTIONS}
         radiusOptions={RADIUS_OPTIONS}
@@ -108,7 +107,7 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[]}
         activeCategories={[]}
-        selectedCategory="all"
+        selectedCategories={[]}
         selectedRadius="2000"
         categoryOptions={CATEGORY_OPTIONS}
         radiusOptions={RADIUS_OPTIONS}
@@ -136,7 +135,7 @@ describe("VenueShortlist", () => {
       <VenueShortlist
         venues={[VENUE]}
         activeCategories={["cafe"]}
-        selectedCategory="cafe"
+        selectedCategories={["cafe"]}
         selectedRadius="2000"
         categoryOptions={CATEGORY_OPTIONS}
         radiusOptions={RADIUS_OPTIONS}
@@ -151,15 +150,15 @@ describe("VenueShortlist", () => {
     );
 
     await user.click(
-      screen.getByRole("combobox", { name: "Filter kategori venue" }),
+      screen.getByRole("button", { name: "Filter kategori venue" }),
     );
-    await user.click(screen.getByText("Restaurant"));
+    await user.click(screen.getByLabelText("Restaurant"));
     await user.click(
       screen.getByRole("combobox", { name: "Filter radius venue" }),
     );
     await user.click(screen.getByText("1 km"));
 
-    expect(onCategoryChange).toHaveBeenCalledWith("restaurant");
+    expect(onCategoryChange).toHaveBeenCalledWith(["cafe", "restaurant"]);
     expect(onRadiusChange).toHaveBeenCalledWith("1000");
   });
 });

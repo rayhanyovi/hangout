@@ -8,6 +8,8 @@ export function buildDraftRoomSeedFromSnapshot(snapshot: RoomSnapshot): DraftRoo
 
   return {
     title: snapshot.room.title,
+    description: snapshot.room.description,
+    scheduledLabel: snapshot.room.scheduledLabel,
     hostDisplayName: hostMember?.displayName ?? "Host",
     guestDisplayName: undefined,
     transportMode: snapshot.room.transportMode,

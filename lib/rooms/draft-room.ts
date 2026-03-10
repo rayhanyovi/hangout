@@ -11,6 +11,8 @@ import {
 
 export type DraftRoomSeed = {
   title: string | null;
+  description: string | null;
+  scheduledLabel: string | null;
   hostDisplayName: string;
   guestDisplayName?: string;
   transportMode: TransportMode;
@@ -25,6 +27,8 @@ export type DraftRoomSeed = {
 const draftRoomSearchSchema = z.object({
   preview: z.enum(["1"]).optional(),
   title: z.string().trim().max(80).optional(),
+  description: z.string().trim().max(240).optional(),
+  scheduled: z.string().trim().max(80).optional(),
   host: z.string().trim().min(1).max(40).optional(),
   guest: z.string().trim().min(1).max(40).optional(),
   transport: z.enum(TRANSPORT_MODES).optional(),
@@ -48,6 +52,14 @@ export function serializeDraftRoomSearchParams(seed: DraftRoomSeed) {
 
   if (seed.title) {
     params.set("title", seed.title);
+  }
+
+  if (seed.description) {
+    params.set("description", seed.description);
+  }
+
+  if (seed.scheduledLabel) {
+    params.set("scheduled", seed.scheduledLabel);
   }
 
   params.set("host", seed.hostDisplayName);
@@ -80,6 +92,8 @@ export function parseDraftRoomSearchParams(
   const normalizedInput = {
     preview: getFirstValue(rawSearchParams.preview),
     title: getFirstValue(rawSearchParams.title),
+    description: getFirstValue(rawSearchParams.description),
+    scheduled: getFirstValue(rawSearchParams.scheduled),
     host: getFirstValue(rawSearchParams.host),
     guest: getFirstValue(rawSearchParams.guest),
     transport: getFirstValue(rawSearchParams.transport),
@@ -95,6 +109,8 @@ export function parseDraftRoomSearchParams(
   if (!parsed.success) {
     return {
       title: null,
+      description: null,
+      scheduledLabel: null,
       hostDisplayName: "Host",
       transportMode: "motor",
       privacyMode: "approximate",
@@ -107,6 +123,8 @@ export function parseDraftRoomSearchParams(
 
   return {
     title: parsed.data.title?.trim() ? parsed.data.title.trim() : null,
+    description: parsed.data.description?.trim() ? parsed.data.description.trim() : null,
+    scheduledLabel: parsed.data.scheduled?.trim() ? parsed.data.scheduled.trim() : null,
     hostDisplayName: parsed.data.host ?? "Host",
     guestDisplayName: parsed.data.guest,
     transportMode: parsed.data.transport ?? "motor",

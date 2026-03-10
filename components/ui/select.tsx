@@ -97,6 +97,15 @@ type SimpleSelectProps = {
   className?: string;
 };
 
+type MultiSelectBoxProps = {
+  values: string[];
+  options: SelectOption[];
+  onValuesChange: (values: string[]) => void;
+  ariaLabel: string;
+  placeholder?: string;
+  className?: string;
+};
+
 function SimpleSelect({
   value,
   options,
@@ -120,7 +129,91 @@ function SimpleSelect({
   );
 }
 
+function MultiSelectBox({
+  values,
+  options,
+  onValuesChange,
+  ariaLabel,
+  placeholder = "Pilih opsi",
+  className,
+}: MultiSelectBoxProps) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const selectedLabels = options
+    .filter((option) => values.includes(option.value))
+    .map((option) => option.label);
+
+  React.useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className={cn("relative", className)}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-11 w-full items-center justify-between rounded-3xl border border-line bg-card px-4 py-3 text-left text-sm font-semibold text-foreground shadow-sm"
+      >
+        <span className="truncate">
+          {selectedLabels.length > 0 ? selectedLabels.join(", ") : placeholder}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+      {open ? (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[1201] rounded-2xl border border-line bg-popover p-2 shadow-xl"
+        >
+          <div className="max-h-64 overflow-y-auto">
+            {options.map((option) => {
+              const checked = values.includes(option.value);
+
+              return (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-surface"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      const nextValues = checked
+                        ? values.filter((value) => value !== option.value)
+                        : [...values, option.value];
+                      onValuesChange(nextValues);
+                    }}
+                    className="h-4 w-4 rounded border-line text-primary accent-[var(--color-primary)]"
+                  />
+                  <span>{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export {
+  MultiSelectBox,
   Select,
   SimpleSelect as SelectBox,
   SelectTrigger,

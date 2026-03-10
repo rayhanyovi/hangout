@@ -20,6 +20,7 @@ import {
   type Midpoint,
   type Room,
   type RoomSnapshot,
+  type UpdateRoomDetailsOutput,
   type UpdateMemberLocationOutput,
   type Venue,
   type Vote,
@@ -39,6 +40,8 @@ type RoomRow = {
   room_id: string;
   join_code: string;
   title: string | null;
+  description: string | null;
+  scheduled_label: string | null;
   created_at: string;
   expires_at: string;
   created_by_member_id: string;
@@ -97,6 +100,8 @@ function createRoomRecord(
     roomId: crypto.randomUUID(),
     joinCode,
     title: input.title,
+    description: input.description ?? null,
+    scheduledLabel: input.scheduledLabel ?? null,
     createdAt,
     expiresAt,
     createdByMemberId: hostMemberId,
@@ -173,6 +178,8 @@ function mapRoom(row: RoomRow): Room {
     roomId: row.room_id,
     joinCode: row.join_code,
     title: row.title,
+    description: row.description,
+    scheduledLabel: row.scheduled_label,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     createdByMemberId: row.created_by_member_id,
@@ -222,6 +229,8 @@ async function fetchRoomRowByJoinCode(client: PoolClient, joinCode: string) {
         room_id,
         join_code,
         title,
+        description,
+        scheduled_label,
         created_at,
         expires_at,
         created_by_member_id,
@@ -317,6 +326,8 @@ async function insertRoom(client: PoolClient, room: Room) {
         room_id,
         join_code,
         title,
+        description,
+        scheduled_label,
         created_at,
         expires_at,
         created_by_member_id,
@@ -327,13 +338,15 @@ async function insertRoom(client: PoolClient, room: Room) {
         finalized_decision,
         status
       ) values (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13::jsonb, $14
       )
     `,
     [
       room.roomId,
       room.joinCode,
       room.title,
+      room.description,
+      room.scheduledLabel,
       room.createdAt,
       room.expiresAt,
       room.createdByMemberId,
@@ -655,6 +668,8 @@ export async function updateMemberLocation(
           room_id,
           join_code,
           title,
+          description,
+          scheduled_label,
           created_at,
           expires_at,
           created_by_member_id,
@@ -686,6 +701,91 @@ export async function updateMemberLocation(
       locatedMemberCount: roomMembers.filter((member) => member.location !== null).length,
       midpointReady: midpoint !== null,
     });
+
+    return {
+      snapshot,
+    };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateRoomDetails(
+  joinCode: string,
+  actorMemberId: string,
+  details: {
+    title?: string | null;
+    description?: string | null;
+    scheduledLabel?: string | null;
+  },
+): Promise<UpdateRoomDetailsOutput> {
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+    await pruneExpiredRooms(client);
+
+    const roomRow = await fetchRoomRowByJoinCode(client, joinCode);
+
+    if (!roomRow) {
+      throw new Error("Room not found.");
+    }
+
+    const room = mapRoom(roomRow);
+
+    if (room.createdByMemberId !== actorMemberId) {
+      throw new Error("Only the host can update room details.");
+    }
+
+    const nextRoomResult = await client.query<RoomRow>(
+      `
+        update rooms
+        set
+          title = $2,
+          description = $3,
+          scheduled_label = $4
+        where room_id = $1
+        returning
+          room_id,
+          join_code,
+          title,
+          description,
+          scheduled_label,
+          created_at,
+          expires_at,
+          created_by_member_id,
+          transport_mode,
+          privacy_mode,
+          venue_preferences,
+          midpoint,
+          finalized_decision,
+          status
+      `,
+      [
+        room.roomId,
+        details.title !== undefined ? details.title : room.title,
+        details.description !== undefined
+          ? details.description
+          : room.description,
+        details.scheduledLabel !== undefined
+          ? details.scheduledLabel
+          : room.scheduledLabel,
+      ],
+    );
+
+    const nextRoomRow = nextRoomResult.rows[0];
+
+    if (!nextRoomRow) {
+      throw new Error("Room update failed.");
+    }
+
+    const nextRoom = mapRoom(nextRoomRow);
+    const snapshot = await buildSnapshotForRoom(client, nextRoom);
+    await client.query("commit");
 
     return {
       snapshot,
@@ -930,6 +1030,8 @@ export async function finalizeRoom(
           room_id,
           join_code,
           title,
+          description,
+          scheduled_label,
           created_at,
           expires_at,
           created_by_member_id,

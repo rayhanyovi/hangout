@@ -10,6 +10,7 @@ import type {
   JoinRoomInput,
   JoinRoomOutput,
   MemberLocation,
+  UpdateRoomDetailsOutput,
   UpdateMemberLocationOutput,
   Venue,
 } from "@/lib/contracts";
@@ -62,6 +63,18 @@ export async function updateMemberLocation(
     memberId,
     location,
   );
+}
+
+export async function updateRoomDetails(
+  joinCode: string,
+  actorMemberId: string,
+  details: {
+    title?: string | null;
+    description?: string | null;
+    scheduledLabel?: string | null;
+  },
+): Promise<UpdateRoomDetailsOutput> {
+  return getRepository().updateRoomDetails(joinCode, actorMemberId, details);
 }
 
 export async function setRoomVenueCache(joinCode: string, venues: Venue[]) {

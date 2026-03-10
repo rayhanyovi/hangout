@@ -13,7 +13,11 @@ import { type VenueCategory, type Vote as RoomVote } from "@/lib/contracts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { SelectBox, type SelectOption } from "@/components/ui/select";
+import {
+  MultiSelectBox,
+  SelectBox,
+  type SelectOption,
+} from "@/components/ui/select";
 import {
   filterRankedVenues,
   type RankedVenue,
@@ -22,11 +26,11 @@ import {
 type VenueShortlistProps = {
   venues: RankedVenue[];
   activeCategories: VenueCategory[];
-  selectedCategory: string;
+  selectedCategories: string[];
   selectedRadius: string;
   categoryOptions: SelectOption[];
   radiusOptions: SelectOption[];
-  onCategoryChange: (value: string) => void;
+  onCategoryChange: (values: string[]) => void;
   onRadiusChange: (value: string) => void;
   onSelectVenue: (venueId: string) => void;
   isLoading: boolean;
@@ -54,7 +58,7 @@ const CATEGORY_LABELS: Record<VenueCategory, string> = {
 export function VenueShortlist({
   venues,
   activeCategories,
-  selectedCategory,
+  selectedCategories,
   selectedRadius,
   categoryOptions,
   radiusOptions,
@@ -103,11 +107,12 @@ export function VenueShortlist({
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
             Kategori
           </p>
-          <SelectBox
+          <MultiSelectBox
             ariaLabel="Filter kategori venue"
-            value={selectedCategory}
+            values={selectedCategories}
             options={categoryOptions}
-            onValueChange={onCategoryChange}
+            onValuesChange={onCategoryChange}
+            placeholder="Semua kategori"
           />
         </div>
         <div>

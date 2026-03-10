@@ -14,6 +14,8 @@ import { createRoomSchema } from "@/lib/validation";
 const CREATE_ROOM_TIMEOUT_MS = 10000;
 
 const DEFAULT_ROOM_SETUP = {
+  description: null,
+  scheduledLabel: null,
   transportMode: "motor" as const,
   privacyMode: "approximate" as const,
   venuePreferences: {

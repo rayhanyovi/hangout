@@ -22,6 +22,7 @@ import {
   type Midpoint,
   type Room,
   type RoomSnapshot,
+  type UpdateRoomDetailsOutput,
   type UpdateMemberLocationOutput,
   type Venue,
   type Vote,
@@ -184,6 +185,8 @@ function createRoomRecord(
     roomId: crypto.randomUUID(),
     joinCode,
     title: input.title,
+    description: input.description ?? null,
+    scheduledLabel: input.scheduledLabel ?? null,
     createdAt,
     expiresAt,
     createdByMemberId: hostMemberId,
@@ -437,6 +440,61 @@ export async function updateMemberLocation(
     locatedMemberCount: roomMembers.filter((member) => member.location !== null).length,
     midpointReady: midpoint !== null,
   });
+
+  return {
+    snapshot: buildSnapshot(nextStore, nextRoom),
+  };
+}
+
+export async function updateRoomDetails(
+  joinCode: string,
+  actorMemberId: string,
+  details: {
+    title?: string | null;
+    description?: string | null;
+    scheduledLabel?: string | null;
+  },
+): Promise<UpdateRoomDetailsOutput> {
+  const store = await readStore();
+  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
+
+  if (!room) {
+    throw new Error("Room not found.");
+  }
+
+  if (room.createdByMemberId !== actorMemberId) {
+    throw new Error("Only the host can update room details.");
+  }
+
+  const nextRooms = store.rooms.map((candidate) =>
+    candidate.roomId === room.roomId
+      ? {
+          ...candidate,
+          title:
+            details.title !== undefined ? details.title : candidate.title,
+          description:
+            details.description !== undefined
+              ? details.description
+              : candidate.description,
+          scheduledLabel:
+            details.scheduledLabel !== undefined
+              ? details.scheduledLabel
+              : candidate.scheduledLabel,
+        }
+      : candidate,
+  );
+  const nextRoom = nextRooms.find((candidate) => candidate.roomId === room.roomId);
+
+  if (!nextRoom) {
+    throw new Error("Room update failed.");
+  }
+
+  const nextStore = {
+    ...store,
+    rooms: nextRooms,
+  };
+
+  await writeStore(nextStore);
 
   return {
     snapshot: buildSnapshot(nextStore, nextRoom),
