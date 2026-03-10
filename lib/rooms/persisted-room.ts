@@ -22,16 +22,16 @@ export function buildDraftRoomSeedFromSnapshot(snapshot: RoomSnapshot): DraftRoo
 
 function buildMemberStatusLabel(member: Member) {
   if (member.role === "host" && member.location) {
-    return "Host shared a location";
+    return "Host sudah membagikan lokasi";
   }
 
   if (member.location) {
-    return "Location shared";
+    return "Lokasi sudah dibagikan";
   }
 
   return member.role === "host"
-    ? "Host is setting up the room"
-    : "Waiting to share a location";
+    ? "Host sedang menyiapkan room"
+    : "Menunggu lokasi dibagikan";
 }
 
 export function mapSnapshotMembersToDraftMembers(

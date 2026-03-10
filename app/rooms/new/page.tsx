@@ -12,10 +12,10 @@ export default function NewRoomPage() {
               H
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
                 Hangout
               </p>
-              <p className="text-xs text-muted">Create room flow</p>
+              <p className="text-xs text-muted-foreground">Buat room baru</p>
             </div>
           </div>
           <Link
@@ -29,25 +29,25 @@ export default function NewRoomPage() {
 
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-5 rounded-3xl border border-line bg-surface p-7 shadow-xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
-              Route: /rooms/new
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+              Mulai dari sini
             </p>
-            <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
-              Host setup dimulai dari sini.
+            <h1 className="text-4xl font-semibold tracking-[-0.05em] text-primary md:text-5xl">
+              Buat room buat ngajak teman ketemu.
             </h1>
             <p className="text-base leading-8 text-foreground md:text-lg">
-              Untuk bikin room baru sekarang cukup isi nama acara dan nama host
-              dulu. Pengaturan seperti transport mode, radius, dan preferensi
-              venue bisa dilanjutkan setelah masuk ke room.
+              Isi nama acara dan nama kamu dulu. Setelah room jadi, kamu bisa
+              bagikan kode room, atur preferensi tempat, lalu mulai kumpulkan
+              lokasi teman-teman.
             </p>
             <div className="rounded-2xl border border-line bg-card p-5">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                Current phase
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                Yang akan terjadi
               </p>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Submit form sekarang langsung membuat room persisted dengan join
-                code nyata dari input minimum. Host diarahkan ke room yang sama,
-                lalu setting lanjutan tinggal diteruskan di route live room.
+                Setelah menekan tombol buat room, kamu langsung masuk ke room
+                yang siap dibagikan supaya semua orang bisa join dan ikut
+                menentukan titik temu.
               </p>
             </div>
           </div>

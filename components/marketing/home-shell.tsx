@@ -5,26 +5,26 @@ import { MVP_STATIC_ROUTES } from "@/lib/contracts";
 
 const pillars = [
   {
-    title: "Fair midpoint",
-    eyebrow: "Decision engine",
-    copy: "Hitung titik temu yang terasa adil dulu, baru venue dicari di sekitar area yang memang masuk akal untuk grup kecil.",
+    title: "Titik temu yang adil",
+    eyebrow: "Mulai dari lokasi",
+    copy: "Lihat titik tengah yang masuk akal untuk semua orang, jadi obrolan tidak muter di soal siapa yang paling jauh.",
   },
   {
-    title: "Venue shortlist",
-    eyebrow: "Actionable output",
-    copy: "Hasil akhirnya bukan sekadar koordinat, tapi shortlist tempat nongkrong yang siap dibuka ke Maps dan dibandingkan cepat.",
+    title: "Pilihan tempat yang relevan",
+    eyebrow: "Lanjut ke tempat",
+    copy: "Setelah titik temu ketemu, kamu langsung dapat daftar tempat yang dekat, masuk akal, dan gampang dibandingkan.",
   },
   {
-    title: "Room consensus",
-    eyebrow: "Shared state",
-    copy: "Room, voting, dan finalisasi jadi satu alur supaya keputusan tidak berhenti di diskusi lokasi saja.",
+    title: "Putuskan bareng-bareng",
+    eyebrow: "Semua orang ikut",
+    copy: "Bagikan room, kumpulkan lokasi, voting, lalu kunci pilihan akhir tanpa perlu pindah-pindah chat dan maps.",
   },
 ];
 
 const productSignals = [
-  "Geometric median for midpoint fairness",
-  "Venue shortlist around the meeting radius",
-  "Realtime-ready room flow for voting and finalization",
+  "Hitung titik temu untuk semua anggota",
+  "Cari tempat di sekitar area yang paling masuk akal",
+  "Voting dan pilih hasil akhir di room yang sama",
 ];
 
 export function HomeShell() {
@@ -41,19 +41,19 @@ export function HomeShell() {
                 Hangout
               </p>
               <p className="text-xs text-foreground">
-                Fairness-first hangout planner
+                Cari titik temu tanpa ribet
               </p>
             </div>
           </div>
           <p className="hidden font-bold text-[11px] uppercase tracking-[0.24em] text-foreground md:block">
-            Live room flow ready
+            Siap dipakai bareng
           </p>
         </div>
 
         <div className="grid gap-12 pt-12 lg:grid-cols-[1fr_1fr] lg:items-start">
           <div className="space-y-8">
             <div className="space-y-5">
-              <h1 className="max-w-3xl text-5xl font-semibold leading-[0.95] text-foreground md:text-7xl">
+              <h1 className="max-w-3xl text-5xl font-semibold leading-[0.95] text-primary md:text-7xl">
                 Temukan <br />
                 <span className="text-primary">titik tengah</span>, bukan debat
                 yang muter terus.
@@ -74,14 +74,14 @@ export function HomeShell() {
                 href={MVP_STATIC_ROUTES.newRoom}
                 className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform duration-200 hover:-translate-y-0.5"
               >
-                Create room
+                Buat room
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="#state-of-app"
                 className="inline-flex items-center justify-center rounded-full border border-line bg-surface-soft px-6 py-3 text-sm font-semibold text-foreground transition-transform duration-200 hover:-translate-y-0.5"
               >
-                Lihat app status
+                Lihat cara kerjanya
               </Link>
             </div>
 
@@ -92,7 +92,7 @@ export function HomeShell() {
                   className="rounded-3xl border border-line bg-surface p-4 shadow-lg"
                 >
                   <p className="font-bold text-[11px] uppercase tracking-[0.2em] text-primary">
-                    Product signal
+                    Cocok untuk
                   </p>
                   <p className="mt-1 text-sm font-medium leading-6 text-ink-soft">
                     {signal}
@@ -110,22 +110,22 @@ export function HomeShell() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-bold text-[11px] uppercase tracking-[0.22em] text-foreground">
-                    Preview room
+                    Contoh room
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-primary">
                     Jakarta meetup, but fair.
                   </h2>
                 </div>
                 <span className="rounded-full bg-success px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
-                  midpoint ready
+                  titik temu siap
                 </span>
               </div>
 
               <div className="rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Room pulse</p>
+                  <p className="text-sm font-semibold text-primary">Ringkasan anggota</p>
                   <p className="font-bold text-xs text-foreground">
-                    3 members shared
+                    3 orang sudah share lokasi
                   </p>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -143,9 +143,9 @@ export function HomeShell() {
                       >
                         {member.name[0]}
                       </div>
-                      <p className="text-sm font-semibold">{member.name}</p>
+                      <p className="text-sm font-semibold text-primary">{member.name}</p>
                       <p className="mt-1 text-xs text-foreground">
-                        Fairness span {member.distance}
+                        Jarak ke titik temu {member.distance}
                       </p>
                     </div>
                   ))}
@@ -171,9 +171,9 @@ export function HomeShell() {
 
                 <div className="rounded-2xl border border-line bg-card p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">Venue shortlist</p>
+                    <p className="text-sm font-semibold text-primary">Venue shortlist</p>
                     <p className="font-bold text-xs uppercase tracking-[0.18em] text-foreground">
-                      top 3
+                      3 teratas
                     </p>
                   </div>
                   <div className="mt-4 space-y-3">
@@ -191,11 +191,11 @@ export function HomeShell() {
                             {venue}
                           </p>
                           <p className="mt-1 text-xs text-foreground">
-                            Candidate {index + 1}
+                            Pilihan {index + 1}
                           </p>
                         </div>
                         <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-                          vote-ready
+                          siap dipilih
                         </span>
                       </div>
                     ))}
@@ -220,7 +220,7 @@ export function HomeShell() {
               <p className="font-bold text-[11px] uppercase tracking-[0.2em] text-foreground">
                 {pillar.eyebrow}
               </p>
-              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-primary">
                 {pillar.title}
               </h2>
               <p className="mt-4 text-sm leading-7 text-foreground">

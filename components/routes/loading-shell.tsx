@@ -18,20 +18,20 @@ export function LoadingShell({
               H
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
                 Hangout
               </p>
-              <p className="text-xs text-muted">Loading route</p>
+              <p className="text-xs text-muted-foreground">Loading route</p>
             </div>
           </div>
           <div className="h-8 w-24 animate-pulse rounded-full bg-card" />
         </div>
 
         <section className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
             {badge}
           </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
+          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-primary md:text-5xl">
             {title}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-foreground md:text-lg">

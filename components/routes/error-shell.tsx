@@ -19,10 +19,10 @@ export function ErrorShell({
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-4xl space-y-8">
         <section className="rounded-3xl border border-line bg-surface p-8 shadow-xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
             {badge}
           </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
+          <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-primary md:text-5xl">
             {title}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-8 text-foreground md:text-lg">

@@ -34,7 +34,7 @@ describe("buildDraftRoomMembers", () => {
       previewMode: true,
     });
 
-    expect(members[1]?.displayName).toBe("Invite slot");
+    expect(members[1]?.displayName).toBe("Menunggu anggota");
     expect(members[1]?.location).toBeNull();
     expect(members.filter(memberHasLocation)).toHaveLength(2);
   });

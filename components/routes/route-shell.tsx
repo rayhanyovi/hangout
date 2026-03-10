@@ -24,10 +24,10 @@ export function RouteShell({
               H
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
                 Hangout
               </p>
-              <p className="text-xs text-muted">MVP route shell</p>
+              <p className="text-xs text-muted-foreground">MVP route shell</p>
             </div>
           </div>
           <Link
@@ -39,17 +39,17 @@ export function RouteShell({
         </div>
 
         <section className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
             {badge}
           </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
+          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-primary md:text-5xl">
             {title}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-foreground md:text-lg">
             {description}
           </p>
           <div className="mt-8 rounded-2xl border border-line bg-card p-5">
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
               Next implementation step
             </p>
             <p className="mt-3 text-sm leading-7 text-ink-soft">{nextStep}</p>

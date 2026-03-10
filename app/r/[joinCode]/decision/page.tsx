@@ -38,10 +38,10 @@ export default async function RoomDecisionPage({
               H
             </span>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
                 Hangout
               </p>
-              <p className="text-xs text-muted">Decision summary</p>
+              <p className="text-xs text-muted-foreground">Hasil akhir</p>
             </div>
           </div>
           <Link
@@ -49,47 +49,47 @@ export default async function RoomDecisionPage({
             className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-foreground transition hover:-translate-y-0.5"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to room
+            Kembali ke room
           </Link>
         </div>
 
         {finalizedVenue ? (
           <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <article className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
-                Finalized venue
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+                Tempat terpilih
               </p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-foreground md:text-5xl">
+              <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-primary md:text-5xl">
                 {finalizedVenue.name}
               </h1>
               <p className="mt-4 text-base leading-8 text-foreground md:text-lg">
-                Host sudah mengunci venue ini sebagai hasil akhir room{" "}
+                Tempat ini sudah dikunci sebagai pilihan akhir untuk room{" "}
                 <span className="font-mono text-foreground">{joinCode}</span>.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-line bg-card p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                    Category
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                    Kategori
                   </p>
                   <p className="mt-2 text-sm font-semibold uppercase text-foreground">
                     {finalizedVenue.category}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-line bg-card p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                    Distance
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                    Jarak
                   </p>
                   <p className="mt-2 text-sm font-semibold text-foreground">
-                    {finalizedVenue.distanceToCenterM} m from midpoint
+                    {finalizedVenue.distanceToCenterM} m dari titik temu
                   </p>
                 </div>
                 <div className="rounded-2xl border border-line bg-card p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                    Votes locked
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                    Total suara
                   </p>
                   <p className="mt-2 text-sm font-semibold text-foreground">
-                    {finalizedVoteCount} vote(s)
+                    {finalizedVoteCount} suara
                   </p>
                 </div>
               </div>
@@ -101,34 +101,34 @@ export default async function RoomDecisionPage({
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                 >
-                  Open in Maps
+                  Buka di Maps
                   <ExternalLink className="h-4 w-4" />
                 </a>
                 <Link
                   href={`/r/${joinCode}`}
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
                 >
-                  Return to room
+                  Kembali ke room
                 </Link>
               </div>
             </article>
 
             <article className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
               <div className="flex items-center gap-2">
-                <MapPinned className="h-4 w-4 text-muted" />
-                <p className="text-sm font-semibold text-foreground">
-                  Final handoff
+                <MapPinned className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-semibold text-primary">
+                  Detail tempat
                 </p>
               </div>
               <p className="mt-4 text-sm leading-7 text-foreground">
-                Deep link maps sekarang sudah stabil karena decision route baca
-                finalized room state yang persisted, bukan lagi preview shell.
+                Buka lokasi ini di Maps, lalu pakai ringkasan di bawah untuk
+                melihat hasil voting akhirnya.
               </p>
 
               {finalizedVenue.address ? (
                 <div className="mt-5 rounded-2xl border border-line bg-card p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                    Address
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+                    Alamat
                   </p>
                   <p className="mt-2 text-sm font-medium text-foreground">
                     {finalizedVenue.address}
@@ -138,9 +138,9 @@ export default async function RoomDecisionPage({
 
               <div className="mt-5 rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-center gap-2">
-                  <Vote className="h-4 w-4 text-muted" />
-                  <p className="text-sm font-semibold text-foreground">
-                    Voting recap
+                  <Vote className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-semibold text-primary">
+                    Ringkasan voting
                   </p>
                 </div>
                 <div className="mt-4 space-y-3">
@@ -157,8 +157,8 @@ export default async function RoomDecisionPage({
                         <p className="text-sm font-medium text-foreground">
                           {venue.name}
                         </p>
-                        <span className="text-xs font-semibold text-muted">
-                          {voteCount} vote(s)
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {voteCount} suara
                         </span>
                       </div>
                     );
@@ -169,22 +169,22 @@ export default async function RoomDecisionPage({
           </section>
         ) : (
           <section className="rounded-3xl border border-line bg-surface p-7 shadow-xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
-              Finalized venue
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
+              Tempat terpilih
             </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">
-              Belum ada keputusan final.
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-primary">
+              Belum ada tempat yang dikunci.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
-              Host belum mengunci venue untuk room ini. Voting masih bisa
-              berubah selama room masih berstatus open.
+              Voting masih berjalan. Tunggu host memilih hasil akhirnya setelah
+              semua orang selesai menentukan pilihan.
             </p>
             <div className="mt-6">
               <Link
                 href={`/r/${joinCode}`}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
               >
-                Back to room
+                Kembali ke room
               </Link>
             </div>
           </section>

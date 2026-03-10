@@ -15,13 +15,13 @@ export const PRIVACY_RULES = {
     locationPrecisionDecimals: LOCATION_RETENTION_POLICY.exactModeDecimals,
     storeExactCoordinate: true,
     description:
-      "Store coordinates with higher precision for the active room window only.",
+      "Lokasi disimpan lebih presisi selama room masih aktif.",
   },
   approximate: {
     locationPrecisionDecimals: LOCATION_RETENTION_POLICY.approximateModeDecimals,
     storeExactCoordinate: false,
     description:
-      "Round coordinates before storage so room members share area-level presence, not exact position.",
+      "Lokasi dibulatkan sebelum disimpan supaya yang dibagikan adalah area, bukan titik persisnya.",
   },
 } as const satisfies Record<
   PrivacyMode,

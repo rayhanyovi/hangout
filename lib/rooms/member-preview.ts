@@ -38,7 +38,7 @@ export function buildDraftRoomMembers(seed: DraftRoomSeed): DraftRoomMember[] {
     id: "host",
     displayName: seed.hostDisplayName,
     role: "host",
-    statusLabel: "Host ready",
+    statusLabel: "Host siap memulai",
     location: createPreviewLocation(PREVIEW_MEMBER_COORDINATES[0], "gps"),
   };
 
@@ -47,22 +47,22 @@ export function buildDraftRoomMembers(seed: DraftRoomSeed): DraftRoomMember[] {
         id: "guest",
         displayName: seed.guestDisplayName,
         role: "member",
-        statusLabel: "Joined the preview shell",
+        statusLabel: "Sudah masuk ke room",
         location: createPreviewLocation(PREVIEW_MEMBER_COORDINATES[1], "search"),
       }
     : {
         id: "invite-slot",
-        displayName: "Invite slot",
+        displayName: "Menunggu anggota",
         role: "member",
-        statusLabel: "Waiting for the next member",
+        statusLabel: "Belum ada anggota lain yang masuk",
         location: null,
       };
 
   const previewMember: DraftRoomMember = {
     id: "member-3",
-    displayName: "Member 3",
+    displayName: "Anggota 3",
     role: "member",
-    statusLabel: "Preview participant",
+    statusLabel: "Sudah siap ikut menentukan lokasi",
     location: createPreviewLocation(PREVIEW_MEMBER_COORDINATES[2], "pinned"),
   };
 
@@ -76,7 +76,7 @@ export function createPendingDraftRoomMember(
     id: `member-${crypto.randomUUID().slice(0, 8)}`,
     displayName,
     role: "member",
-    statusLabel: "Added in the room shell",
+    statusLabel: "Baru ditambahkan ke room",
     location: null,
   };
 }

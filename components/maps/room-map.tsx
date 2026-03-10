@@ -29,8 +29,8 @@ const LeafletRoomMapClient = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[380px] items-center justify-center rounded-[1.5rem] border border-line bg-surface text-sm text-muted">
-        Loading map shell...
+      <div className="flex h-[380px] items-center justify-center rounded-[1.5rem] border border-line bg-surface text-sm text-muted-foreground">
+        Memuat peta...
       </div>
     ),
   },

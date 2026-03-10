@@ -18,7 +18,7 @@ const ClientLocationPickerMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[240px] items-center justify-center rounded-[1.25rem] border border-line bg-surface text-sm text-muted">
+      <div className="flex h-[240px] items-center justify-center rounded-[1.25rem] border border-line bg-surface text-sm text-muted-foreground">
         Loading pin picker...
       </div>
     ),
