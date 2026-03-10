@@ -23,6 +23,7 @@ import {
 } from "@/lib/rooms";
 import { RoomMap } from "@/components/maps/room-map";
 import { RoomMemberManager } from "@/components/rooms/room-member-manager";
+import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { RoomVotingPanel } from "@/components/rooms/room-voting-panel";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 import { JoinRoomInline } from "@/components/rooms/join-room-inline";
@@ -53,7 +54,10 @@ type VoteMutationResponse = {
   message?: string;
 };
 
+type AsyncStatus = "idle" | "loading" | "success" | "timeout" | "error";
+
 const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
+const ROOM_ACTION_TIMEOUT_MS = 10000;
 
 export function RoomPageShell({
   joinCode,
@@ -73,12 +77,16 @@ export function RoomPageShell({
     VenueCategory[]
   >([]);
   const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
+  const [roomSyncStatus, setRoomSyncStatus] = useState<AsyncStatus>(
+    isLiveRoom ? "loading" : "success",
+  );
   const [votes, setVotes] = useState<Vote[]>(() => liveRoomContext?.initialVotes ?? []);
   const [finalizedVenueId, setFinalizedVenueId] = useState<string | null>(
     () => liveRoomContext?.finalizedVenueId ?? null,
   );
   const [voteError, setVoteError] = useState<string | null>(null);
   const [isVoteSubmitting, setIsVoteSubmitting] = useState(false);
+  const [venueStatus, setVenueStatus] = useState<AsyncStatus>("idle");
 
   const mappedMembers = useMemo(
     () =>
@@ -123,8 +131,20 @@ export function RoomPageShell({
     !isLiveRoom ||
     (currentMemberId !== null &&
       members.some((member) => member.id === currentMemberId));
-
   const inviteLink = getRoomRoute(joinCode);
+  const needsMoreLocations = mappedMembers.length < 2;
+  const showVenueEmptyState =
+    midpoint !== null &&
+    !isVenueLoading &&
+    venueError === null &&
+    venues.length === 0 &&
+    venueStatus !== "loading";
+  const finalizedVenueName =
+    finalizedVenueId !== null
+      ? venues.find((venue) => venue.venueId === finalizedVenueId)?.name ??
+        finalizedVenueId
+      : null;
+  const decisionRoute = getRoomDecisionRoute(joinCode);
 
   const handleAddMember = (displayName: string) => {
     if (isLiveRoom) {
@@ -182,8 +202,16 @@ export function RoomPageShell({
                   : "Pinned manually in the room shell",
             }
           : member,
-      ),
+        ),
     );
+    setRoomSyncError(null);
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, ROOM_ACTION_TIMEOUT_MS);
 
     try {
       const response = await fetch(`/api/rooms/${joinCode}`, {
@@ -191,6 +219,7 @@ export function RoomPageShell({
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           memberId,
           location,
@@ -206,10 +235,18 @@ export function RoomPageShell({
       setVotes(payload.snapshot.votes);
       setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
       setRoomSyncError(null);
+      setRoomSyncStatus("success");
     } catch (error) {
       setRoomSyncError(
-        error instanceof Error ? error.message : "Location update failed.",
+        didTimeout
+          ? "Location update timed out before the room snapshot was refreshed."
+          : error instanceof Error
+            ? error.message
+            : "Location update failed.",
       );
+      setRoomSyncStatus(didTimeout ? "timeout" : "error");
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
@@ -233,6 +270,13 @@ export function RoomPageShell({
     }
 
     setIsVoteSubmitting(true);
+    setVoteError(null);
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, ROOM_ACTION_TIMEOUT_MS);
 
     try {
       const response = await fetch(`/api/rooms/${joinCode}/votes`, {
@@ -240,6 +284,7 @@ export function RoomPageShell({
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           memberId: currentMemberId,
           venueId,
@@ -256,9 +301,14 @@ export function RoomPageShell({
       setVoteError(null);
     } catch (error) {
       setVoteError(
-        error instanceof Error ? error.message : "Vote update failed.",
+        didTimeout
+          ? "Vote update timed out before the room state was refreshed."
+          : error instanceof Error
+            ? error.message
+            : "Vote update failed.",
       );
     } finally {
+      window.clearTimeout(timeoutId);
       setIsVoteSubmitting(false);
     }
   };
@@ -269,6 +319,13 @@ export function RoomPageShell({
     }
 
     setIsVoteSubmitting(true);
+    setVoteError(null);
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, ROOM_ACTION_TIMEOUT_MS);
 
     try {
       const response = await fetch(`/api/rooms/${joinCode}/finalize`, {
@@ -276,6 +333,7 @@ export function RoomPageShell({
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           memberId: currentMemberId,
           venueId,
@@ -292,9 +350,14 @@ export function RoomPageShell({
       setVoteError(null);
     } catch (error) {
       setVoteError(
-        error instanceof Error ? error.message : "Room finalization failed.",
+        didTimeout
+          ? "Room finalization timed out before the decision was locked."
+          : error instanceof Error
+            ? error.message
+            : "Room finalization failed.",
       );
     } finally {
+      window.clearTimeout(timeoutId);
       setIsVoteSubmitting(false);
     }
   };
@@ -305,11 +368,30 @@ export function RoomPageShell({
     }
 
     let cancelled = false;
+    let activeController: AbortController | null = null;
+    let isFetching = false;
 
     const syncRoomSnapshot = async () => {
+      if (isFetching) {
+        return;
+      }
+
+      isFetching = true;
+      const controller = new AbortController();
+      activeController = controller;
+      let didTimeout = false;
+      const timeoutId = window.setTimeout(() => {
+        didTimeout = true;
+        controller.abort();
+      }, 6000);
+
       try {
+        setRoomSyncStatus((current) =>
+          current === "success" ? current : "loading",
+        );
         const response = await fetch(`/api/rooms/${joinCode}`, {
           cache: "no-store",
+          signal: controller.signal,
         });
         const payload = (await response.json()) as
           | RoomSnapshot
@@ -328,13 +410,27 @@ export function RoomPageShell({
           setVotes(snapshot.votes);
           setFinalizedVenueId(snapshot.room.finalizedDecision?.venueId ?? null);
           setRoomSyncError(null);
+          setRoomSyncStatus("success");
         }
       } catch (error) {
         if (!cancelled) {
+          if (didTimeout) {
+            setRoomSyncError("Room sync is taking longer than expected.");
+            setRoomSyncStatus("timeout");
+            return;
+          }
+
           setRoomSyncError(
             error instanceof Error ? error.message : "Room sync failed.",
           );
+          setRoomSyncStatus("error");
         }
+      } finally {
+        if (activeController === controller) {
+          activeController = null;
+        }
+        isFetching = false;
+        window.clearTimeout(timeoutId);
       }
     };
 
@@ -345,19 +441,26 @@ export function RoomPageShell({
 
     return () => {
       cancelled = true;
+      activeController?.abort();
       window.clearInterval(interval);
     };
   }, [isLiveRoom, joinCode]);
 
   useEffect(() => {
-    if (midpointLat === null || midpointLng === null) {
+    if (mappedMembers.length < 2 || midpointLat === null || midpointLng === null) {
       setVenues([]);
       setIsVenueLoading(false);
       setVenueError(null);
+      setVenueStatus("idle");
       return;
     }
 
     const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, 12000);
     const params = new URLSearchParams({
       lat: String(midpointLat),
       lng: String(midpointLng),
@@ -376,6 +479,7 @@ export function RoomPageShell({
     }
 
     setIsVenueLoading(true);
+    setVenueStatus("loading");
 
     const timer = window.setTimeout(async () => {
       try {
@@ -391,8 +495,14 @@ export function RoomPageShell({
 
         setVenues(payload.venues);
         setVenueError(null);
+        setVenueStatus("success");
       } catch (error) {
         if (controller.signal.aborted) {
+          if (didTimeout) {
+            setVenueError("Venue provider timed out before results were ready.");
+            setVenues([]);
+            setVenueStatus("timeout");
+          }
           return;
         }
 
@@ -402,16 +512,17 @@ export function RoomPageShell({
             ? error.message
             : "Venue provider request failed.",
         );
+        setVenueStatus("error");
       } finally {
-        if (!controller.signal.aborted) {
-          setIsVenueLoading(false);
-        }
+        setIsVenueLoading(false);
+        window.clearTimeout(timeoutId);
       }
     }, 350);
 
     return () => {
       controller.abort();
       window.clearTimeout(timer);
+      window.clearTimeout(timeoutId);
     };
   }, [
     midpointLat,
@@ -422,6 +533,7 @@ export function RoomPageShell({
     requestedTagParam,
     isLiveRoom,
     joinCode,
+    mappedMembers.length,
   ]);
 
   useEffect(() => {
@@ -534,11 +646,93 @@ export function RoomPageShell({
           <JoinRoomInline initialJoinCode={joinCode} compact />
         ) : null}
 
-        {roomSyncError ? (
-          <div className="rounded-[1.4rem] border border-coral/30 bg-coral/8 px-5 py-4 text-sm text-coral">
-            {roomSyncError}
-          </div>
-        ) : null}
+        <div className="space-y-4">
+          {isLiveRoom && !viewerHasJoined ? (
+            <RoomStatusBanner
+              tone="info"
+              title="Join this room before interacting."
+              description="Masuk dulu sebagai member supaya device kamu bisa kirim lokasi, vote venue, dan ikut final decision di room yang sama."
+            />
+          ) : null}
+
+          {isLiveRoom && roomSyncStatus === "loading" ? (
+            <RoomStatusBanner
+              tone="info"
+              title="Syncing the live room."
+              description="Snapshot room sedang di-refresh dari server supaya roster, vote, dan decision state tetap konsisten."
+            />
+          ) : null}
+
+          {roomSyncStatus === "timeout" ? (
+            <RoomStatusBanner
+              tone="warning"
+              title="Room sync is slower than expected."
+              description={
+                roomSyncError ??
+                "Snapshot room belum kembali dari server. Tunggu sebentar atau ulangi aksi terakhir."
+              }
+            />
+          ) : null}
+
+          {roomSyncStatus === "error" && roomSyncError ? (
+            <RoomStatusBanner
+              tone="error"
+              title="Room sync failed."
+              description={roomSyncError}
+            />
+          ) : null}
+
+          {needsMoreLocations ? (
+            <RoomStatusBanner
+              tone="info"
+              title="Need more member locations."
+              description="Midpoint dan venue shortlist baru dihitung setelah minimal dua member berhasil share lokasi."
+            />
+          ) : null}
+
+          {!needsMoreLocations && venueStatus === "loading" ? (
+            <RoomStatusBanner
+              tone="info"
+              title="Searching nearby venues."
+              description="Provider venue sedang mencari kandidat di sekitar midpoint room ini."
+            />
+          ) : null}
+
+          {venueStatus === "timeout" ? (
+            <RoomStatusBanner
+              tone="warning"
+              title="Venue provider is taking too long."
+              description={
+                venueError ??
+                "Request venue belum selesai tepat waktu. Coba tunggu polling berikutnya atau perbarui data room."
+              }
+            />
+          ) : null}
+
+          {venueStatus === "error" && venueError ? (
+            <RoomStatusBanner
+              tone="error"
+              title="Venue provider failed."
+              description={venueError}
+            />
+          ) : null}
+
+          {showVenueEmptyState ? (
+            <RoomStatusBanner
+              tone="warning"
+              title="No venues matched this room yet."
+              description="Filter kategori, radius, atau tag saat ini belum menghasilkan shortlist yang layak. Ubah preferensi room atau tunggu midpoint bergeser."
+            />
+          ) : null}
+
+          {finalizedVenueName ? (
+            <RoomStatusBanner
+              tone="success"
+              title="Room decision has been finalized."
+              description={`Venue ${finalizedVenueName} sudah dikunci. Lanjut ke decision route ${decisionRoute} untuk handoff Maps dan recap voting.`}
+            />
+          ) : null}
+        </div>
 
         <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="space-y-6">

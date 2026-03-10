@@ -89,77 +89,93 @@ export function RoomVotingPanel({
         </p>
       ) : null}
 
-      <div className="mt-5 rounded-[1.4rem] border border-line bg-white/80 p-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-          Selected venue
-        </p>
-        <p className="mt-2 text-sm font-semibold text-foreground">
-          {selectedVenue?.name ?? "Pick a venue from the shortlist first"}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => selectedVenueId && onVote(selectedVenueId)}
-            disabled={!currentMemberId || !selectedVenueId || isSubmitting || finalizedVenueId !== null}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Vote className="h-4 w-4" />
-            Vote for selected venue
-          </button>
-          <button
-            type="button"
-            onClick={() => selectedVenueId && onFinalize(selectedVenueId)}
-            disabled={
-              currentMemberId !== hostMemberId ||
-              !selectedVenueId ||
-              isSubmitting ||
-              finalizedVenueId !== null
-            }
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Crown className="h-4 w-4" />
-            Host finalize
-          </button>
+      {venues.length === 0 ? (
+        <div className="mt-5 rounded-[1.4rem] border border-line bg-white/80 p-4">
+          <p className="text-sm font-semibold text-foreground">
+            Voting opens after the shortlist is ready.
+          </p>
+          <p className="mt-2 text-sm leading-7 text-muted">
+            Tunggu venue provider selesai atau bagikan lokasi member tambahan
+            dulu supaya room punya kandidat yang bisa dipilih.
+          </p>
         </div>
-      </div>
+      ) : null}
 
-      <div className="mt-5 space-y-3">
-        {venues.map((venue) => {
-          const venueVotes = votes.filter((vote) => vote.venueId === venue.venueId).length;
-          const isCurrentVote = currentVote?.venueId === venue.venueId;
-          const isFinalized = finalizedVenueId === venue.venueId;
-
-          return (
-            <div
-              key={venue.venueId}
-              className={`rounded-[1.3rem] border p-4 ${
-                isFinalized ? "border-foreground bg-white" : "border-line bg-white/80"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{venue.name}</p>
-                  <p className="mt-1 text-xs text-muted">{venueVotes} vote(s)</p>
-                </div>
-                <div className="flex gap-2">
-                  {isCurrentVote ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-teal/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
-                      <CheckCircle2 className="h-3 w-3" />
-                      your vote
-                    </span>
-                  ) : null}
-                  {isFinalized ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
-                      <Crown className="h-3 w-3" />
-                      finalized
-                    </span>
-                  ) : null}
-                </div>
-              </div>
+      {venues.length > 0 ? (
+        <>
+          <div className="mt-5 rounded-[1.4rem] border border-line bg-white/80 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+              Selected venue
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {selectedVenue?.name ?? "Pick a venue from the shortlist first"}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => selectedVenueId && onVote(selectedVenueId)}
+                disabled={!currentMemberId || !selectedVenueId || isSubmitting || finalizedVenueId !== null}
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Vote className="h-4 w-4" />
+                Vote for selected venue
+              </button>
+              <button
+                type="button"
+                onClick={() => selectedVenueId && onFinalize(selectedVenueId)}
+                disabled={
+                  currentMemberId !== hostMemberId ||
+                  !selectedVenueId ||
+                  isSubmitting ||
+                  finalizedVenueId !== null
+                }
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Crown className="h-4 w-4" />
+                Host finalize
+              </button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {venues.map((venue) => {
+              const venueVotes = votes.filter((vote) => vote.venueId === venue.venueId).length;
+              const isCurrentVote = currentVote?.venueId === venue.venueId;
+              const isFinalized = finalizedVenueId === venue.venueId;
+
+              return (
+                <div
+                  key={venue.venueId}
+                  className={`rounded-[1.3rem] border p-4 ${
+                    isFinalized ? "border-foreground bg-white" : "border-line bg-white/80"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{venue.name}</p>
+                      <p className="mt-1 text-xs text-muted">{venueVotes} vote(s)</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {isCurrentVote ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-teal/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-teal">
+                          <CheckCircle2 className="h-3 w-3" />
+                          your vote
+                        </span>
+                      ) : null}
+                      {isFinalized ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                          <Crown className="h-3 w-3" />
+                          finalized
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
     </article>
   );
 }

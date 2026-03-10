@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
+import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { getRoomRoute, type CreateRoomOutput } from "@/lib/contracts";
 import { createRoomSchema } from "@/lib/validation";
 
@@ -20,6 +21,7 @@ const BUDGET_OPTIONS = [
 ] as const;
 
 const RADIUS_OPTIONS = [500, 1000, 2000, 3000, 5000] as const;
+const CREATE_ROOM_TIMEOUT_MS = 10000;
 
 export function CreateRoomForm() {
   const router = useRouter();
@@ -36,6 +38,9 @@ export function CreateRoomForm() {
   const [tagsInput, setTagsInput] = useState("wifi, cozy");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestState, setRequestState] = useState<"idle" | "loading" | "timeout">(
+    "idle",
+  );
   const [isPending, startTransition] = useTransition();
 
   const parsedTags = useMemo(
@@ -78,6 +83,14 @@ export function CreateRoomForm() {
 
     setError(null);
     setIsSubmitting(true);
+    setRequestState("loading");
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, CREATE_ROOM_TIMEOUT_MS);
 
     try {
       const response = await fetch("/api/rooms", {
@@ -85,6 +98,7 @@ export function CreateRoomForm() {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify(parsed.data),
       });
       const payload = (await response.json()) as
@@ -106,11 +120,16 @@ export function CreateRoomForm() {
       });
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Room creation failed.",
+        didTimeout
+          ? "Room creation timed out before the room was ready."
+          : submitError instanceof Error
+            ? submitError.message
+            : "Room creation failed.",
       );
+      setRequestState(didTimeout ? "timeout" : "idle");
       setIsSubmitting(false);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
@@ -305,6 +324,22 @@ export function CreateRoomForm() {
           </div>
         </div>
       </div>
+
+      {requestState === "loading" ? (
+        <RoomStatusBanner
+          tone="info"
+          title="Creating the room."
+          description="Host setup sedang dikirim ke room API supaya join code dan host session bisa dibuat."
+        />
+      ) : null}
+
+      {requestState === "timeout" ? (
+        <RoomStatusBanner
+          tone="warning"
+          title="Room creation is taking longer than expected."
+          description="Coba kirim ulang setup host ini. Jika masalah berulang, cek server room API atau environment lokal."
+        />
+      ) : null}
 
       {error ? (
         <p className="text-sm font-medium text-coral">{error}</p>

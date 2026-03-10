@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
+import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { getRoomRoute, type JoinRoomOutput } from "@/lib/contracts";
 import { joinRoomSchema } from "@/lib/validation";
 
@@ -10,6 +11,8 @@ type JoinRoomInlineProps = {
   initialJoinCode?: string;
   compact?: boolean;
 };
+
+const JOIN_ROOM_TIMEOUT_MS = 10000;
 
 export function JoinRoomInline({
   initialJoinCode = "",
@@ -20,6 +23,9 @@ export function JoinRoomInline({
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestState, setRequestState] = useState<"idle" | "loading" | "timeout">(
+    "idle",
+  );
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,6 +43,14 @@ export function JoinRoomInline({
 
     setError(null);
     setIsSubmitting(true);
+    setRequestState("loading");
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, JOIN_ROOM_TIMEOUT_MS);
 
     try {
       const response = await fetch("/api/rooms/join", {
@@ -44,6 +58,7 @@ export function JoinRoomInline({
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify(parsed.data),
       });
       const payload = (await response.json()) as
@@ -65,11 +80,16 @@ export function JoinRoomInline({
       });
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Join request failed.",
+        didTimeout
+          ? "Join request timed out before the room could be opened."
+          : submitError instanceof Error
+            ? submitError.message
+            : "Join request failed.",
       );
+      setRequestState(didTimeout ? "timeout" : "idle");
       setIsSubmitting(false);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
@@ -133,6 +153,26 @@ export function JoinRoomInline({
           Join flow sekarang memakai room API nyata dan langsung masuk ke room yang sama.
         </p>
       )}
+
+      {requestState === "loading" ? (
+        <div className="mt-4">
+          <RoomStatusBanner
+            tone="info"
+            title="Joining the room."
+            description="Identity member sedang dibuat dan snapshot room akan dibuka setelah request selesai."
+          />
+        </div>
+      ) : null}
+
+      {requestState === "timeout" ? (
+        <div className="mt-4">
+          <RoomStatusBanner
+            tone="warning"
+            title="Join flow is taking longer than expected."
+            description="Ulangi join request ini. Jika tetap timeout, cek room API atau status persistence lokal."
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <p className="mt-3 text-sm font-medium text-coral">{error}</p>
