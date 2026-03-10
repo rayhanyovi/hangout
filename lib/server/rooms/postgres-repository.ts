@@ -155,7 +155,6 @@ function computePersistedMidpoint(
     fairness: fairnessSummary.rows.map((row) => ({
       memberId: row.id,
       distanceKm: row.distanceKm,
-      etaMin: row.etaMin,
     })),
   };
 }

@@ -36,17 +36,18 @@ export default function NewRoomPage() {
               Host setup dimulai dari sini.
             </h1>
             <p className="text-base leading-8 text-muted md:text-lg">
-              Form ini mengunci alur host setup di root app: title, transport
-              mode, privacy mode, radius, dan preferensi venue dasar.
+              Untuk bikin room baru sekarang cukup isi nama acara dan nama host
+              dulu. Pengaturan seperti transport mode, radius, dan preferensi
+              venue bisa dilanjutkan setelah masuk ke room.
             </p>
             <div className="rounded-[1.5rem] border border-line bg-white/80 p-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                 Current phase
               </p>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Submit form sekarang sudah membuat room persisted dengan join
-                code nyata. Host langsung diarahkan ke room yang sama dan link
-                `/r/[joinCode]` bisa dibagikan ke member lain.
+                Submit form sekarang langsung membuat room persisted dengan join
+                code nyata dari input minimum. Host diarahkan ke room yang sama,
+                lalu setting lanjutan tinggal diteruskan di route live room.
               </p>
             </div>
           </div>

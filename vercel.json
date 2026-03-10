@@ -18,10 +18,6 @@
     "app/api/venues/**/*.ts": {
       "maxDuration": 15,
       "supportsCancellation": true
-    },
-    "app/api/routing/**/*.ts": {
-      "maxDuration": 15,
-      "supportsCancellation": true
     }
   }
 }

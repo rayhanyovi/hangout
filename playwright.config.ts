@@ -40,8 +40,6 @@ export default defineConfig({
         "playwright-room-store",
       ),
       HANGOUT_SMOKE_EXPECT_FIXTURES: "true",
-      HANGOUT_ROUTING_PROVIDER: "mapbox",
-      HANGOUT_USE_FIXTURE_ROUTING: "true",
       HANGOUT_USE_FIXTURE_VENUES: "true",
       NEXT_TELEMETRY_DISABLED: "1",
     },

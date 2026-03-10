@@ -26,7 +26,7 @@ This repository now has one active application state:
 - Local browser-level smoke coverage now exists for the create, join, location share, vote, finalize, and decision flow via Playwright
 - A deployed smoke harness now exists via `npm run test:e2e:deployed` so preview or production URLs can be exercised without spinning up a local dev server
 - Member location input now supports pin-on-map selection in addition to GPS capture and raw coordinate entry
-- Fairness shell now upgrades from heuristic ETA to provider-backed route durations when Mapbox routing env is configured, with heuristic fallback kept for local/offline or unsupported modes
+- Fairness shell intentionally stays focused on midpoint and straight-line distance only; route guidance is delegated to Maps handoff outside the app
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
@@ -99,7 +99,6 @@ Prototype architecture during the audit:
 
 Important product requirements that are still missing:
 
-- Full routing-provider rollout in deployed environments; provider support now exists in code, but live environment setup and smoke verification are still pending
 - Optional geocoded address search UX; pin-on-map input already exists, but text-address lookup is not implemented yet
 - Environment hardening, deployment assumptions, and final Vercel rollout sign-off
 
@@ -135,7 +134,6 @@ Recommended target shape for the production app:
 - Schema evolution: versioned SQL migrations under `db/migrations/`, with `db/schema.sql` as the latest reference snapshot
 - Expiry handling: room rows carry `expires_at`, with request-driven pruning plus a 15-minute authenticated cron cleanup route
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
-- Fairness ETA boundary: server-only Mapbox Matrix adapter with runtime cache, stale fallback, and heuristic fallback when provider config is absent or unsupported
 - Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
 - Realtime strategy: 4-second polling for MVP, with explicit refresh events and a later upgrade path to realtime transport
 

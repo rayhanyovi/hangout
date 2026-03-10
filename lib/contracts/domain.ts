@@ -50,11 +50,10 @@ export type Member = {
 export type FairnessItem = {
   memberId: MemberId;
   distanceKm?: number;
-  etaMin?: number;
 };
 
 export type Midpoint = Coordinate & {
-  method: "centroid" | "geometric_median" | "minimax_eta";
+  method: "centroid" | "geometric_median";
   computedAt: string;
   fairness: FairnessItem[];
 };

@@ -8,10 +8,8 @@ Run the core Hangout room flow against a deployed preview or production URL with
 
 - A reachable deployment URL, for example `https://hangout-git-preview-branch.vercel.app`
 - A deployment that already has durable PostgreSQL configured
-- For the first stable preview pass, deterministic provider envs are recommended:
+- For the first stable preview pass, deterministic venue envs are recommended:
   - `HANGOUT_USE_FIXTURE_VENUES=true`
-  - `HANGOUT_USE_FIXTURE_ROUTING=true`
-  - `HANGOUT_ROUTING_PROVIDER=mapbox`
 
 ## Command
 
@@ -26,7 +24,6 @@ Use these only if the deployment is not using fixture providers:
 - `HANGOUT_SMOKE_EXPECT_FIXTURES=false`
 - `HANGOUT_SMOKE_EXPECTED_VENUE_NAME=<expected venue>`
 - `HANGOUT_SMOKE_EXPECTED_MAP_URL=<expected map url>`
-- `HANGOUT_SMOKE_EXPECTED_ROUTING_LABEL=<expected routing label>`
 
 ## What The Smoke Covers
 

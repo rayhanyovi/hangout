@@ -26,7 +26,6 @@ This file records the current Vercel deployment posture for the root Next.js app
 
 - Set `DATABASE_URL` in Vercel project environment variables for any shared preview or production deployment
 - Set `CRON_SECRET` in Vercel project environment variables so scheduled cleanup requests are authenticated
-- Set `HANGOUT_ROUTING_PROVIDER=mapbox` and `MAPBOX_ACCESS_TOKEN` if you want deployed rooms to use provider-backed route durations instead of the heuristic ETA fallback
 - Run `npm run db:migrate` before first traffic so versioned SQL migrations are applied in order
 - If `DATABASE_URL` is omitted, the app falls back to a temporary runtime file store; that fallback is acceptable for local development but not for durable Vercel environments
 
@@ -41,16 +40,14 @@ This file records the current Vercel deployment posture for the root Next.js app
 
 ## First Preview Smoke Profile
 
-For the first durable preview deployment, prefer deterministic provider settings so the smoke test isolates Vercel + PostgreSQL behavior instead of third-party venue volatility:
+For the first durable preview deployment, prefer deterministic venue settings so the smoke test isolates Vercel + PostgreSQL behavior instead of third-party venue volatility:
 
 - `DATABASE_URL=<preview postgres url>`
 - `CRON_SECRET=<random 16+ char secret>`
 - `HANGOUT_USE_FIXTURE_VENUES=true`
-- `HANGOUT_USE_FIXTURE_ROUTING=true`
-- `HANGOUT_ROUTING_PROVIDER=mapbox`
 - `HANGOUT_ENABLE_STRUCTURED_LOGS=true`
 
-This keeps the deployment durable because the database is real, while venue and routing providers stay deterministic during first preview verification.
+This keeps the deployment durable because the database is real, while venue results stay deterministic during first preview verification.
 
 ## Deployed Smoke Command
 

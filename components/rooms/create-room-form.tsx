@@ -1,41 +1,29 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { getRoomRoute, type CreateRoomOutput } from "@/lib/contracts";
 import { createRoomSchema } from "@/lib/validation";
 
-const CATEGORY_OPTIONS = [
-  { value: "cafe", label: "Cafe" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "park", label: "Park" },
-  { value: "mall", label: "Mall" },
-] as const;
-
-const BUDGET_OPTIONS = [
-  { value: "low", label: "Low" },
-  { value: "mid", label: "Mid" },
-  { value: "high", label: "High" },
-] as const;
-
-const RADIUS_OPTIONS = [500, 1000, 2000, 3000, 5000] as const;
 const CREATE_ROOM_TIMEOUT_MS = 10000;
+
+const DEFAULT_ROOM_SETUP = {
+  transportMode: "motor" as const,
+  privacyMode: "approximate" as const,
+  venuePreferences: {
+    categories: ["cafe", "restaurant"] as const,
+    tags: [] as string[],
+    budget: "mid" as const,
+    radiusMDefault: 2000,
+  },
+};
 
 export function CreateRoomForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [hostDisplayName, setHostDisplayName] = useState("");
-  const [transportMode, setTransportMode] = useState<"walk" | "motor" | "car" | "transit">("motor");
-  const [privacyMode, setPrivacyMode] = useState<"exact" | "approximate">("approximate");
-  const [radiusMDefault, setRadiusMDefault] = useState<(typeof RADIUS_OPTIONS)[number]>(2000);
-  const [categories, setCategories] = useState<Array<(typeof CATEGORY_OPTIONS)[number]["value"]>>([
-    "cafe",
-    "restaurant",
-  ]);
-  const [budget, setBudget] = useState<"low" | "mid" | "high" | undefined>("mid");
-  const [tagsInput, setTagsInput] = useState("wifi, cozy");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestState, setRequestState] = useState<"idle" | "loading" | "timeout">(
@@ -43,37 +31,13 @@ export function CreateRoomForm() {
   );
   const [isPending, startTransition] = useTransition();
 
-  const parsedTags = useMemo(
-    () =>
-      tagsInput
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    [tagsInput],
-  );
-
-  const toggleCategory = (value: (typeof CATEGORY_OPTIONS)[number]["value"]) => {
-    setCategories((current) =>
-      current.includes(value)
-        ? current.filter((category) => category !== value)
-        : [...current, value],
-    );
-  };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsed = createRoomSchema.safeParse({
       title: title.trim() ? title.trim() : null,
       hostDisplayName,
-      transportMode,
-      privacyMode,
-      venuePreferences: {
-        categories,
-        tags: parsedTags,
-        budget,
-        radiusMDefault,
-      },
+      ...DEFAULT_ROOM_SETUP,
     });
 
     if (!parsed.success) {
@@ -138,198 +102,49 @@ export function CreateRoomForm() {
       onSubmit={handleSubmit}
       className="grid gap-6 rounded-[2rem] border border-line bg-white/78 p-6 shadow-[0_22px_70px_rgba(31,27,23,0.12)]"
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Room title
-          </span>
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Friday catch-up"
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
-          />
+      <div className="space-y-2">
+        <label
+          htmlFor="room-title"
+          className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
+          Room title
         </label>
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Host name
-          </span>
-          <input
-            value={hostDisplayName}
-            onChange={(event) => setHostDisplayName(event.target.value)}
-            placeholder="Yovi"
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
-          />
-        </label>
+        <input
+          id="room-title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Friday catch-up"
+          className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+        />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Transport mode
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {[
-              { value: "walk", label: "Walk" },
-              { value: "motor", label: "Motor" },
-              { value: "car", label: "Car" },
-              { value: "transit", label: "Transit" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setTransportMode(option.value as typeof transportMode)}
-                className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                  transportMode === option.value
-                    ? "border-coral bg-coral/12 text-coral"
-                    : "border-line bg-surface text-foreground"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Privacy mode
-          </p>
-          <div className="grid gap-2">
-            {[
-              {
-                value: "approximate",
-                label: "Approximate",
-                copy: "Koordinat dibulatkan untuk share area-level presence.",
-              },
-              {
-                value: "exact",
-                label: "Exact",
-                copy: "Presisi lebih tinggi selama room masih aktif.",
-              },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setPrivacyMode(option.value as typeof privacyMode)}
-                className={`rounded-2xl border px-4 py-4 text-left transition ${
-                  privacyMode === option.value
-                    ? "border-teal bg-teal/12"
-                    : "border-line bg-surface"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">
-                    {option.label}
-                  </span>
-                  {privacyMode === option.value ? (
-                    <Check className="h-4 w-4 text-teal" />
-                  ) : null}
-                </div>
-                <p className="mt-2 text-xs leading-5 text-muted">{option.copy}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Search radius
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {RADIUS_OPTIONS.map((radius) => (
-              <button
-                key={radius}
-                type="button"
-                onClick={() => setRadiusMDefault(radius)}
-                className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                  radiusMDefault === radius
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-line bg-surface text-foreground"
-                }`}
-              >
-                {radius >= 1000 ? `${radius / 1000} km` : `${radius} m`}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="space-y-2">
+        <label
+          htmlFor="host-name"
+          className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
+          Host name
+        </label>
+        <input
+          id="host-name"
+          value={hostDisplayName}
+          onChange={(event) => setHostDisplayName(event.target.value)}
+          placeholder="Yovi"
+          className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+        />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Venue categories
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORY_OPTIONS.map((option) => {
-              const active = categories.includes(option.value);
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => toggleCategory(option.value)}
-                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    active
-                      ? "border-coral bg-coral/12 text-coral"
-                      : "border-line bg-surface text-foreground"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="block space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Soft tags
-            </span>
-            <input
-              value={tagsInput}
-              onChange={(event) => setTagsInput(event.target.value)}
-              placeholder="wifi, cozy, outdoor"
-              className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
-            />
-          </label>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Budget signal
-          </p>
-          <div className="grid gap-2">
-            {BUDGET_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setBudget(option.value)}
-                className={`rounded-2xl border px-4 py-3 text-left transition ${
-                  budget === option.value
-                    ? "border-sun bg-sun/25"
-                    : "border-line bg-surface"
-                }`}
-              >
-                <span className="text-sm font-semibold text-foreground">
-                  {option.label}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="rounded-[1.5rem] border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted">
-            Flow ini sudah memakai validasi kontrak root app dan room API
-            persisted. Saat submit, host langsung masuk ke live room dengan
-            join code nyata.
-          </div>
-        </div>
+      <div className="rounded-[1.5rem] border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted">
+        Room akan dibuat dulu dengan setup default. Transport mode, radius,
+        kategori venue, budget, dan preferensi lanjutan bisa diatur dari room
+        setelah host masuk.
       </div>
 
       {requestState === "loading" ? (
         <RoomStatusBanner
           tone="info"
           title="Creating the room."
-          description="Host setup sedang dikirim ke room API supaya join code dan host session bisa dibuat."
+          description="Nama acara dan host sedang dikirim ke room API supaya join code dan host session bisa dibuat."
         />
       ) : null}
 
@@ -347,7 +162,7 @@ export function CreateRoomForm() {
 
       <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted">
-          Host setup ini sudah cukup untuk mengalir ke route room yang dibekukan.
+          Cukup isi nama acara dan nama host untuk buka room baru.
         </p>
         <button
           type="submit"

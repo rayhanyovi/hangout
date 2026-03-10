@@ -6,9 +6,6 @@ const expectedFixtureVenueId =
   process.env.HANGOUT_SMOKE_EXPECTED_VENUE_ID ?? "kopi-tengah";
 const expectedFixtureVenueName =
   process.env.HANGOUT_SMOKE_EXPECTED_VENUE_NAME ?? "Kopi Tengah";
-const expectedRoutingLabel =
-  process.env.HANGOUT_SMOKE_EXPECTED_ROUTING_LABEL ??
-  "Mapbox Matrix driving proxy";
 const expectedFixtureMapUrl =
   process.env.HANGOUT_SMOKE_EXPECTED_MAP_URL ??
   "https://maps.example.com/kopi-tengah";
@@ -115,7 +112,6 @@ test("core room flow works across create, join, vote, and finalize", async ({
     await expect(
       memberPage.getByTestId(`venue-card-${expectedFixtureVenueId}`),
     ).toBeVisible();
-    await expect(hostPage.getByText(expectedRoutingLabel)).toBeVisible();
   } else {
     await expect(hostPage.getByTestId(/^venue-card-/).first()).toBeVisible();
     await expect(memberPage.getByTestId(/^venue-card-/).first()).toBeVisible();
