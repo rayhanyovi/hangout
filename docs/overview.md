@@ -1,0 +1,91 @@
+# Project Hangout Overview
+
+## Purpose
+
+Project Hangout is a fairness-first hangout planner for small groups. The intended MVP flow from the PRD/BRD is:
+
+1. Create or join a room.
+2. Share each member's location.
+3. Compute a fair meeting point.
+4. Recommend venues near that point.
+5. Let members vote and finalize one venue.
+
+The core product promise is simple: reduce location debate, make the tradeoff transparent, and move the group to a final decision quickly.
+
+## Current Repo State
+
+This repository currently contains two separate app states:
+
+- Root app: a fresh Next.js 16 App Router starter in `/app`
+- Reference app: a Lovable export in `/my-idea-app` built with Vite + React + TypeScript
+- Root TypeScript and ESLint validation are now scoped to the production app, not the Lovable reference folder
+
+The root Next.js app is still a starter shell and does not yet implement the product. The Lovable export contains the only real product prototype today.
+
+## What Exists In `my-idea-app`
+
+Implemented prototype capabilities:
+
+- Add/remove members locally
+- Capture member location via browser geolocation
+- Manual latitude/longitude input
+- Compute a geometric median as the meeting point
+- Show a fairness summary using haversine distance
+- Search nearby venues from Overpass/OpenStreetMap
+- Filter venues by category
+- Show members, midpoint, search radius, and venues on a Leaflet map
+- Copy a hardcoded room-style URL to clipboard
+
+Current architecture in the Lovable export:
+
+- Single-page client app
+- React Router routes `/` and `/room/:roomId`, both rendering the same page
+- No real backend
+- No persistent room state
+- No realtime sync
+- No auth or member identity beyond local component state
+- No database or TTL cleanup
+
+## Gap Against The PRD/BRD
+
+Important product requirements that are still missing:
+
+- Real room lifecycle: create, join, host/member role, unique join code
+- Shared room state across users
+- Voting system and venue finalization
+- Privacy mode and data retention policy
+- Transport mode handling
+- Address search / pin-on-map input flow
+- Backend API and persistence layer
+- Realtime or polling synchronization
+- Production-grade observability, rate limiting, and error handling
+
+In short: `my-idea-app` is a useful interaction prototype, not an MVP-complete production app.
+
+## Audit Findings
+
+High-signal findings from the audit:
+
+- Before repo isolation, root build was blocked because the root Next.js TypeScript scope included files inside `/my-idea-app`, even though that folder should be reference-only.
+- Before repo isolation, root lint also scanned `/my-idea-app`, so reference code quality issues polluted root repo health.
+- `my-idea-app/package-lock.json` is out of sync with `my-idea-app/package.json`, so `npm ci` fails before validation can run cleanly.
+- The Lovable export assumes a Vite alias model (`@` -> `src`) that does not match the root Next.js alias scope.
+- Venue fetching is done directly from the browser to `https://overpass-api.de/api/interpreter`, which is fragile for production use and hard to control for rate limiting, caching, and fallback behavior.
+- The current "share room" feature copies a hardcoded URL (`/room/HANG42`), so it is only a UI placeholder.
+- The geolocation fallback injects random Jakarta-area coordinates when browser geolocation fails. That is acceptable for a demo, but invalid for production behavior.
+- The prototype uses browser-only dependencies like `react-leaflet`, `window`, and `navigator`, so the eventual Next.js migration needs clear client/server boundaries.
+
+## Suggested Target Direction
+
+Recommended target shape for the production app:
+
+- Root Next.js App Router app becomes the only active application
+- `my-idea-app` remains read-only reference until parity is complete
+- Shared contracts live in root and drive both server and client code
+- Venue search moves behind a server boundary
+- Room state, member state, midpoint state, and voting state become explicit persisted entities
+- Deployment target remains Vercel, with environment variables and provider limits handled in root app architecture
+
+## Working Assumption For Future Tasks
+
+Treat `/my-idea-app` as a design and logic reference, not as code to harden in place. The main job is to rebuild the product properly in the root Next.js app, using the prototype only where it meaningfully accelerates parity.
