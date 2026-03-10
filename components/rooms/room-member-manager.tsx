@@ -20,6 +20,10 @@ import {
   type PrivacyMode,
 } from "@/lib/contracts";
 import { LocationPickerMap } from "@/components/maps/location-picker-map";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { createValidatedMemberLocation, type DraftRoomMember } from "@/lib/rooms";
 import { joinRoomSchema } from "@/lib/validation";
 
@@ -227,16 +231,19 @@ export function RoomMemberManager({
   };
 
   return (
-    <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
-      <div className="flex items-center gap-2">
+    <Card className="bg-surface">
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-muted-foreground" />
         <div>
-          <h2 className="text-lg font-semibold text-primary">Anggota room</h2>
+          <CardTitle>Anggota room</CardTitle>
           <p className="mt-2 text-sm leading-7 text-foreground">
             {privacyMode} · {privacyRule.locationPrecisionDecimals} digit presisi lokasi
           </p>
         </div>
       </div>
+      </CardHeader>
+      <CardContent className="pt-0">
 
       {!isLiveMode || canAddMembers ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
@@ -244,7 +251,7 @@ export function RoomMemberManager({
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               Tambah anggota
             </span>
-            <input
+            <Input
               value={pendingName}
               onChange={(event) => setPendingName(event.target.value)}
               onKeyDown={(event) => {
@@ -254,17 +261,16 @@ export function RoomMemberManager({
                 }
               }}
               placeholder="Tulis nama anggota"
-              className="w-full rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
-          <button
+          <Button
             type="button"
             onClick={handleAddMember}
-            className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
+            className="self-end"
           >
             <Plus className="h-4 w-4" />
             Tambah
-          </button>
+          </Button>
         </div>
       ) : (
         <p className="mt-5 text-sm leading-7 text-foreground">
@@ -286,10 +292,10 @@ export function RoomMemberManager({
             (currentMemberId !== null && member.id === currentMemberId);
 
           return (
-            <div
+            <Card
               key={member.id}
               data-testid={`member-card-${member.id}`}
-              className="rounded-2xl border border-line bg-card p-4"
+              className="rounded-2xl p-4 shadow-none"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -297,13 +303,13 @@ export function RoomMemberManager({
                     <p className="text-sm font-semibold text-primary">
                       {member.displayName}
                     </p>
-                    <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    <Badge variant="secondary">
                       {member.role}
-                    </span>
+                    </Badge>
                     {currentMemberId === member.id ? (
-                      <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                      <Badge>
                         kamu
-                      </span>
+                      </Badge>
                     ) : null}
                   </div>
                   <p className="mt-2 text-sm text-ink-soft">{member.statusLabel}</p>
@@ -322,11 +328,12 @@ export function RoomMemberManager({
                 </div>
 
                 {!isLiveMode ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onRemoveMember?.(member.id)}
                     disabled={member.role === "host"}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted-foreground transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    variant="outline"
+                    size="icon"
                     aria-label={`Remove ${member.displayName}`}
                     title={
                       member.role === "host"
@@ -335,7 +342,7 @@ export function RoomMemberManager({
                     }
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 ) : null}
               </div>
 
@@ -343,7 +350,7 @@ export function RoomMemberManager({
                 id={`member-location-actions-${member.id}`}
                 className="mt-4 flex flex-wrap gap-2 rounded-2xl p-2 transition"
               >
-                <button
+                <Button
                   type="button"
                   onClick={() => handleCurrentLocation(member.id)}
                   data-testid={`member-use-current-location-${member.id}`}
@@ -352,7 +359,8 @@ export function RoomMemberManager({
                     locationLocked ||
                     !canUseCurrentLocation
                   }
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                  variant="secondary"
+                  size="sm"
                 >
                   {loadingMemberId === member.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -360,27 +368,29 @@ export function RoomMemberManager({
                     <Crosshair className="h-3.5 w-3.5" />
                   )}
                   Gunakan lokasi saat ini
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => startManualEdit(member)}
                   data-testid={`member-enter-coordinates-${member.id}`}
                   disabled={locationLocked || !canUpdateThisMember}
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                  variant="secondary"
+                  size="sm"
                 >
                   <MapPinned className="h-3.5 w-3.5" />
                   Isi koordinat
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => startManualEdit(member)}
                   data-testid={`member-pin-on-map-${member.id}`}
                   disabled={locationLocked || !canUpdateThisMember}
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                  variant="secondary"
+                  size="sm"
                 >
                   <Map className="h-3.5 w-3.5" />
                   Pilih di peta
-                </button>
+                </Button>
               </div>
 
               {locationLocked ? (
@@ -404,7 +414,7 @@ export function RoomMemberManager({
               {editingMemberId === member.id ? (
                 <div className="mt-4 space-y-4 rounded-2xl border border-line bg-surface p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <input
+                    <Input
                       data-testid={`member-latitude-${member.id}`}
                       value={manualLat}
                       onChange={(event) => {
@@ -413,9 +423,8 @@ export function RoomMemberManager({
                         updateDraftCoordinate(nextLat, manualLng);
                       }}
                       placeholder="Lintang"
-                      className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
-                    <input
+                    <Input
                       data-testid={`member-longitude-${member.id}`}
                       value={manualLng}
                       onChange={(event) => {
@@ -430,7 +439,6 @@ export function RoomMemberManager({
                         }
                       }}
                       placeholder="Bujur"
-                      className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
@@ -447,33 +455,33 @@ export function RoomMemberManager({
                   />
 
                   <div className="flex flex-wrap gap-3">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void handleManualSave(member.id)}
                       data-testid={`member-save-location-${member.id}`}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5"
                     >
                       <Check className="h-4 w-4" />
                       Simpan
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => {
                         setEditingMemberId(null);
                         setPickedCoordinate(null);
                       }}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                      variant="outline"
                     >
                       <X className="h-4 w-4" />
                       Batal
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : null}
-            </div>
+            </Card>
           );
         })}
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }

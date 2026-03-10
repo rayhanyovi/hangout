@@ -1,9 +1,28 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 import type { RankedVenue } from "@/lib/rooms";
 import type { SelectOption } from "@/components/ui/select";
+
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, "hasPointerCapture", {
+    configurable: true,
+    value: () => false,
+  });
+  Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
+    configurable: true,
+    value: () => undefined,
+  });
+  Object.defineProperty(HTMLElement.prototype, "releasePointerCapture", {
+    configurable: true,
+    value: () => undefined,
+  });
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    configurable: true,
+    value: () => undefined,
+  });
+});
 
 const CATEGORY_OPTIONS: SelectOption[] = [
   { label: "Semua kategori", value: "all" },
@@ -131,14 +150,14 @@ describe("VenueShortlist", () => {
       />,
     );
 
-    await user.selectOptions(
+    await user.click(
       screen.getByRole("combobox", { name: "Filter kategori venue" }),
-      "restaurant",
     );
-    await user.selectOptions(
+    await user.click(screen.getByText("Restaurant"));
+    await user.click(
       screen.getByRole("combobox", { name: "Filter radius venue" }),
-      "1000",
     );
+    await user.click(screen.getByText("1 km"));
 
     expect(onCategoryChange).toHaveBeenCalledWith("restaurant");
     expect(onRadiusChange).toHaveBeenCalledWith("1000");

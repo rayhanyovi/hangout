@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { getRoomRoute, type CreateRoomOutput } from "@/lib/contracts";
 import { persistRoomMemberCookie } from "@/lib/rooms";
 import { createRoomSchema } from "@/lib/validation";
@@ -98,10 +101,9 @@ export function CreateRoomForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid gap-6 rounded-3xl border border-line bg-card p-6 shadow-xl"
-    >
+    <Card className="shadow-xl">
+      <CardContent className="grid gap-6 p-6">
+        <form onSubmit={handleSubmit} className="grid gap-6">
       <div className="space-y-2">
         <label
           htmlFor="room-title"
@@ -109,12 +111,11 @@ export function CreateRoomForm() {
         >
           Nama acara
         </label>
-        <input
+        <Input
           id="room-title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Friday catch-up"
-          className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
@@ -125,12 +126,11 @@ export function CreateRoomForm() {
         >
           Nama kamu
         </label>
-        <input
+        <Input
           id="host-name"
           value={hostDisplayName}
           onChange={(event) => setHostDisplayName(event.target.value)}
           placeholder="Yovi"
-          className="w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
@@ -163,15 +163,16 @@ export function CreateRoomForm() {
         <p className="text-sm text-foreground">
           Isi dua kolom ini untuk mulai bikin room.
         </p>
-        <button
+        <Button
           type="submit"
           disabled={isPending || isSubmitting}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending || isSubmitting ? "Membuka room..." : "Buat room"}
           <ArrowRight className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

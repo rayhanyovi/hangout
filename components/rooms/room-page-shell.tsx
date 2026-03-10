@@ -29,6 +29,8 @@ import { JoinRoomModal } from "@/components/rooms/join-room-modal";
 import { RoomMembersModal } from "@/components/rooms/room-members-modal";
 import { RoomStatusBanner } from "@/components/rooms/room-status-banner";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import type { SelectOption } from "@/components/ui/select";
 
@@ -691,7 +693,7 @@ export function RoomPageShell({
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="rounded-3xl border border-line bg-surface p-6 shadow-xl">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-            <div className="rounded-[2rem] border border-line bg-card p-6 shadow-sm">
+            <Card className="rounded-[2rem] p-6 shadow-sm">
               <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-success" />
                 {draftSeed.previewMode ? "Room baru" : "Room aktif"}
@@ -703,10 +705,10 @@ export function RoomPageShell({
                 Kumpulkan lokasi semua orang, lihat titik temu yang adil, lalu
                 pilih tempat yang paling cocok bareng-bareng.
               </p>
-            </div>
+            </Card>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <article className="rounded-[2rem] border border-line bg-card p-5 shadow-sm">
+              <Card className="rounded-[2rem] p-5 shadow-sm">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
                   Link undangan
                 </p>
@@ -714,10 +716,10 @@ export function RoomPageShell({
                   {inviteLink}
                 </p>
                 <div className="mt-4 flex flex-col gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => void handleCopyInviteLink()}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-center font-semibold text-foreground transition hover:-translate-y-0.5"
+                    variant="secondary"
                   >
                     {inviteCopied ? (
                       <Check className="h-4 w-4" />
@@ -725,31 +727,33 @@ export function RoomPageShell({
                       <Copy className="h-4 w-4" />
                     )}
                     {inviteCopied ? "Link tersalin" : "Copy link undangan"}
-                  </button>
-                  <Link
-                    href={getRoomDecisionRoute(joinCode)}
-                    className="rounded-full bg-primary px-4 py-3 text-center font-semibold text-primary-foreground transition hover:-translate-y-0.5"
-                  >
+                  </Button>
+                  <Button asChild>
+                    <Link href={getRoomDecisionRoute(joinCode)}>
                     Lihat hasil akhir
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
-              </article>
+              </Card>
 
-              <article className="rounded-[2rem] border border-line bg-card p-5 shadow-sm">
+              <Card className="rounded-[2rem] p-5 shadow-sm">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
                   Anggota
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => handleOpenMembersModal()}
-                    className="rounded-2xl border border-line bg-surface p-3 text-left transition hover:-translate-y-0.5"
+                    variant="secondary"
+                    className="h-auto justify-start rounded-2xl p-3 text-left"
                   >
+                    <span className="block">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Total anggota
                     </p>
                     <p className="mt-2 text-lg font-semibold text-foreground">{members.length}</p>
-                  </button>
+                    </span>
+                  </Button>
                   <div className="rounded-2xl border border-line bg-surface p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Sudah share
@@ -763,15 +767,16 @@ export function RoomPageShell({
                     <p className="mt-2 text-lg font-semibold text-foreground">{pendingCount}</p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={() => handleOpenMembersModal(currentMemberId)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+                  variant="secondary"
+                  className="mt-4 w-full"
                 >
                   <Crosshair className="h-4 w-4" />
                   Masukkan lokasi saya
-                </button>
-              </article>
+                </Button>
+              </Card>
             </div>
           </div>
         </header>
@@ -889,7 +894,8 @@ export function RoomPageShell({
               }))}
             />
 
-            <article className="rounded-3xl border border-line bg-surface p-6 shadow-lg">
+            <Card className="bg-surface">
+              <CardContent className="p-6">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
                   Titik temu grup
                 </p>
@@ -952,7 +958,8 @@ export function RoomPageShell({
                     lokasi mereka.
                   </p>
                 )}
-            </article>
+              </CardContent>
+            </Card>
           </div>
         </section>
 

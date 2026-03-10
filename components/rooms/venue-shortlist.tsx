@@ -10,11 +10,14 @@ import {
   Vote,
 } from "lucide-react";
 import { type VenueCategory, type Vote as RoomVote } from "@/lib/contracts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SelectBox, type SelectOption } from "@/components/ui/select";
 import {
   filterRankedVenues,
   type RankedVenue,
 } from "@/lib/rooms";
-import { Select, type SelectOption } from "@/components/ui/select";
 
 type VenueShortlistProps = {
   venues: RankedVenue[];
@@ -78,7 +81,8 @@ export function VenueShortlist({
       : undefined;
 
   return (
-    <article className="h-full rounded-3xl border border-line bg-surface p-6 shadow-lg">
+    <Card className="h-full bg-surface">
+      <CardHeader className="pb-0">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
@@ -91,13 +95,15 @@ export function VenueShortlist({
         </div>
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
       </div>
+      </CardHeader>
+      <CardContent className="pt-5">
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
             Kategori
           </p>
-          <Select
+          <SelectBox
             ariaLabel="Filter kategori venue"
             value={selectedCategory}
             options={categoryOptions}
@@ -108,7 +114,7 @@ export function VenueShortlist({
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
             Radius
           </p>
-          <Select
+          <SelectBox
             ariaLabel="Filter radius venue"
             value={selectedRadius}
             options={radiusOptions}
@@ -154,7 +160,7 @@ export function VenueShortlist({
           <div
             key={venue.venueId}
             data-testid={`venue-card-${venue.venueId}`}
-            className={`rounded-2xl border p-4 transition ${
+            className={`rounded-2xl border p-4 transition shadow-none ${
               selectedVenueId === venue.venueId
                 ? "border-primary bg-card shadow-lg"
                 : "border-line bg-card"
@@ -177,13 +183,13 @@ export function VenueShortlist({
                   <p className="text-sm font-semibold text-primary">
                     {venue.name}
                   </p>
-                  <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <Badge variant="secondary">
                     {CATEGORY_LABELS[venue.category]}
-                  </span>
+                  </Badge>
                   {selectedVenueId === venue.venueId ? (
-                    <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                    <Badge>
                       dipilih
-                    </span>
+                    </Badge>
                   ) : null}
                 </div>
                 {venue.address ? (
@@ -193,34 +199,35 @@ export function VenueShortlist({
                   </p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-surface px-3 py-1 text-[11px] font-semibold text-foreground">
+                  <Badge variant="outline" className="bg-surface px-3 py-1 text-[11px] normal-case tracking-normal">
                     {venue.distanceToCenterM} m dari titik temu
-                  </span>
-                  <span className="rounded-full bg-success-soft px-3 py-1 text-[11px] font-semibold text-success-foreground">
+                  </Badge>
+                  <Badge variant="success" className="px-3 py-1 text-[11px] normal-case tracking-normal">
                     Skor cocok {venue.score.toFixed(1)}
-                  </span>
+                  </Badge>
                   {venue.rating ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-foreground">
+                    <Badge variant="outline" className="gap-1 bg-accent-soft px-3 py-1 text-[11px] normal-case tracking-normal text-accent-foreground">
                       <Star className="h-3 w-3" />
                       {venue.rating}
-                    </span>
+                    </Badge>
                   ) : null}
                 </div>
                 {venue.matchedTags.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {venue.matchedTags.map((tag) => (
-                      <span
+                      <Badge
                         key={`${venue.venueId}-${tag}`}
-                        className="rounded-full border border-line bg-card px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                        variant="secondary"
+                        className="tracking-[0.12em]"
                       >
                         {tag}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 ) : null}
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
@@ -232,12 +239,12 @@ export function VenueShortlist({
                       finalizedVenueId !== null ||
                       !onVote
                     }
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                    size="sm"
                   >
                     <Vote className="h-3.5 w-3.5" />
                     {currentVote?.venueId === venue.venueId ? "Sudah kamu vote" : "Vote"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
@@ -249,30 +256,31 @@ export function VenueShortlist({
                       finalizedVenueId !== null ||
                       !onFinalize
                     }
-                    className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-4 py-2.5 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                    variant="outline"
+                    size="sm"
                   >
                     <Crown className="h-3.5 w-3.5" />
                     Kunci pilihan
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
                 {currentVote?.venueId === venue.venueId ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-success-foreground">
+                  <Badge variant="success" className="gap-1">
                     <CheckCircle2 className="h-3 w-3" />
                     pilihanmu
-                  </span>
+                  </Badge>
                 ) : null}
                 {finalizedVenueId === venue.venueId ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                  <Badge className="gap-1">
                     <Crown className="h-3 w-3" />
                     terpilih
-                  </span>
+                  </Badge>
                 ) : (
-                  <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground">
+                  <Badge variant="outline" className="bg-surface">
                     {votes.filter((vote) => vote.venueId === venue.venueId).length} suara
-                  </span>
+                  </Badge>
                 )}
                 <a
                   href={venue.mapUrl}
@@ -289,6 +297,7 @@ export function VenueShortlist({
           </div>
         ))}
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import * as React from "react";
+import * as ToastPrimitives from "@radix-ui/react-toast";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +24,7 @@ type ToastContextValue = {
   toasts: ToastRecord[];
 };
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+const ToastContext = React.createContext<ToastContextValue | null>(null);
 
 const TOAST_STYLES: Record<
   ToastTone,
@@ -43,8 +35,7 @@ const TOAST_STYLES: Record<
 > = {
   success: {
     icon: CheckCircle2,
-    className:
-      "border-success/30 bg-success-soft text-success-foreground",
+    className: "border-success/30 bg-success-soft text-success-foreground",
   },
   info: {
     icon: Info,
@@ -60,29 +51,29 @@ const TOAST_STYLES: Record<
   },
 };
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<ToastRecord[]>([]);
-  const counterRef = useRef(0);
+function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = React.useState<ToastRecord[]>([]);
+  const counterRef = React.useRef(0);
 
-  const dismiss = useCallback((id: string) => {
+  const dismiss = React.useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const toast = useCallback((input: ToastInput) => {
+  const toast = React.useCallback((input: ToastInput) => {
     counterRef.current += 1;
-
-    const nextToast: ToastRecord = {
-      id: `toast-${counterRef.current}`,
-      tone: input.tone ?? "info",
-      durationMs: input.durationMs ?? 4000,
-      title: input.title,
-      description: input.description,
-    };
-
-    setToasts((current) => [...current, nextToast]);
+    setToasts((current) => [
+      ...current,
+      {
+        id: `toast-${counterRef.current}`,
+        tone: input.tone ?? "info",
+        durationMs: input.durationMs ?? 4000,
+        title: input.title,
+        description: input.description,
+      },
+    ]);
   }, []);
 
-  const value = useMemo(
+  const value = React.useMemo(
     () => ({
       toast,
       dismiss,
@@ -91,11 +82,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [dismiss, toast, toasts],
   );
 
-  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
+  return (
+    <ToastContext.Provider value={value}>
+      <ToastPrimitives.Provider swipeDirection="right">
+        {children}
+      </ToastPrimitives.Provider>
+    </ToastContext.Provider>
+  );
 }
 
-export function useToast() {
-  const context = useContext(ToastContext);
+function useToast() {
+  const context = React.useContext(ToastContext);
 
   if (!context) {
     throw new Error("useToast must be used within ToastProvider.");
@@ -104,69 +101,57 @@ export function useToast() {
   return context;
 }
 
-function ToastItem({
-  toast,
-  onDismiss,
-}: {
-  toast: ToastRecord;
-  onDismiss: (id: string) => void;
-}) {
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      onDismiss(toast.id);
-    }, toast.durationMs ?? 4000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [onDismiss, toast.durationMs, toast.id]);
-
-  const tone = toast.tone ?? "info";
-  const toneStyle = TOAST_STYLES[tone];
-  const Icon = toneStyle.icon;
-
-  return (
-    <div
-      className={cn(
-        "pointer-events-auto w-full rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-sm",
-        toneStyle.className,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{toast.title}</p>
-          {toast.description ? (
-            <p className="mt-1 text-sm leading-6 opacity-90">{toast.description}</p>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => onDismiss(toast.id)}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-current/10 bg-white/40 text-current transition hover:-translate-y-0.5"
-          aria-label="Dismiss toast"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function Toaster() {
-  const context = useContext(ToastContext);
+function Toaster() {
+  const context = React.useContext(ToastContext);
 
   if (!context) {
     return null;
   }
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-full max-w-sm flex-col gap-3">
-      {context.toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={context.dismiss} />
-      ))}
-    </div>
+    <>
+      {context.toasts.map((toast) => {
+        const tone = toast.tone ?? "info";
+        const toneStyle = TOAST_STYLES[tone];
+        const Icon = toneStyle.icon;
+
+        return (
+          <ToastPrimitives.Root
+            key={toast.id}
+            open
+            duration={toast.durationMs}
+            onOpenChange={(open) => {
+              if (!open) {
+                context.dismiss(toast.id);
+              }
+            }}
+            className={cn(
+              "pointer-events-auto w-full rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-sm",
+              toneStyle.className,
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <ToastPrimitives.Title className="text-sm font-semibold">
+                  {toast.title}
+                </ToastPrimitives.Title>
+                {toast.description ? (
+                  <ToastPrimitives.Description className="mt-1 text-sm leading-6 opacity-90">
+                    {toast.description}
+                  </ToastPrimitives.Description>
+                ) : null}
+              </div>
+              <ToastPrimitives.Close className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-current/10 bg-white/40 text-current transition hover:-translate-y-0.5">
+                <X className="h-3.5 w-3.5" />
+              </ToastPrimitives.Close>
+            </div>
+          </ToastPrimitives.Root>
+        );
+      })}
+      <ToastPrimitives.Viewport className="pointer-events-none fixed right-4 top-4 z-[1300] flex w-full max-w-sm flex-col gap-3 outline-none" />
+    </>
   );
 }
+
+export { ToastProvider, Toaster, useToast };

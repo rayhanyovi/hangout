@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { JoinRoomInline } from "@/components/rooms/join-room-inline";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { MVP_STATIC_ROUTES } from "@/lib/contracts";
 
 const pillars = [
@@ -70,26 +73,22 @@ export function HomeShell() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href={MVP_STATIC_ROUTES.newRoom}
-                className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                Buat room
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-              <Link
-                href="#state-of-app"
-                className="inline-flex items-center justify-center rounded-full border border-line bg-surface-soft px-6 py-3 text-sm font-semibold text-foreground transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                Lihat cara kerjanya
-              </Link>
+              <Button asChild size="lg">
+                <Link href={MVP_STATIC_ROUTES.newRoom}>
+                  Buat room
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="#state-of-app">Lihat cara kerjanya</Link>
+              </Button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
               {productSignals.map((signal) => (
-                <div
+                <Card
                   key={signal}
-                  className="rounded-3xl border border-line bg-surface p-4 shadow-lg"
+                  className="bg-surface p-4"
                 >
                   <p className="font-bold text-[11px] uppercase tracking-[0.2em] text-primary">
                     Cocok untuk
@@ -97,7 +96,7 @@ export function HomeShell() {
                   <p className="mt-1 text-sm font-medium leading-6 text-ink-soft">
                     {signal}
                   </p>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -106,7 +105,7 @@ export function HomeShell() {
             <div className="absolute -left-6 top-10 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
             <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-accent/80 blur-3xl" />
 
-            <div className="relative space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-2xl backdrop-blur">
+            <Card className="relative space-y-5 bg-surface p-5 shadow-2xl backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-bold text-[11px] uppercase tracking-[0.22em] text-foreground">
@@ -116,12 +115,12 @@ export function HomeShell() {
                     Jakarta meetup, but fair.
                   </h2>
                 </div>
-                <span className="rounded-full bg-success px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
+                <Badge variant="success" className="bg-success text-primary-foreground">
                   titik temu siap
-                </span>
+                </Badge>
               </div>
 
-              <div className="rounded-2xl border border-line bg-card p-4">
+              <Card className="rounded-2xl p-4 shadow-none">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-primary">Ringkasan anggota</p>
                   <p className="font-bold text-xs text-foreground">
@@ -134,9 +133,9 @@ export function HomeShell() {
                     { name: "Raka", tone: "bg-success", distance: "6.8 km" },
                     { name: "Nina", tone: "bg-accent", distance: "7.0 km" },
                   ].map((member) => (
-                    <div
+                    <Card
                       key={member.name}
-                      className="rounded-2xl border border-line bg-surface-strong p-3"
+                      className="rounded-2xl bg-surface-strong p-3 shadow-none"
                     >
                       <div
                         className={`mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full ${member.tone} text-xs font-bold ${member.tone === "bg-accent" ? "text-accent-foreground" : "text-primary-foreground"}`}
@@ -147,10 +146,10 @@ export function HomeShell() {
                       <p className="mt-1 text-xs text-foreground">
                         Jarak ke titik temu {member.distance}
                       </p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
-              </div>
+              </Card>
 
               <div className="grid gap-4 md:grid-cols-[0.92fr_1.08fr]">
                 <div className="rounded-2xl border border-line bg-primary p-4 text-primary-foreground">
@@ -169,7 +168,7 @@ export function HomeShell() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-line bg-card p-4">
+                <Card className="rounded-2xl p-4 shadow-none">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-primary">Venue shortlist</p>
                     <p className="font-bold text-xs uppercase tracking-[0.18em] text-foreground">
@@ -194,15 +193,15 @@ export function HomeShell() {
                             Pilihan {index + 1}
                           </p>
                         </div>
-                        <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                        <Badge variant="outline" className="bg-primary-soft text-primary">
                           siap dipilih
-                        </span>
+                        </Badge>
                       </div>
                     ))}
                   </div>
-                </div>
+                </Card>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -213,9 +212,9 @@ export function HomeShell() {
       >
         <div className="grid gap-5 lg:grid-cols-1">
           {pillars.map((pillar) => (
-            <article
+            <Card
               key={pillar.title}
-              className="rounded-3xl border border-line bg-surface p-6 shadow-lg"
+              className="bg-surface p-6"
             >
               <p className="font-bold text-[11px] uppercase tracking-[0.2em] text-foreground">
                 {pillar.eyebrow}
@@ -226,7 +225,7 @@ export function HomeShell() {
               <p className="mt-4 text-sm leading-7 text-foreground">
                 {pillar.copy}
               </p>
-            </article>
+            </Card>
           ))}
         </div>
         <JoinRoomInline />
