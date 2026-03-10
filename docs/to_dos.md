@@ -24,7 +24,7 @@ Checklist convention:
 
 - [x] Freeze the MVP route map for the Next.js app
 - [x] Define stable TypeScript contracts for room, member, location, midpoint, venue, vote, and finalized decision
-- [ ] Define the room state machine: open, finalized, expired
+- [x] Define the room state machine: open, finalized, expired
 - [ ] Define privacy and retention rules in implementation terms
 
 ## Backend And Data

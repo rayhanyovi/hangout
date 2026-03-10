@@ -50,8 +50,9 @@ The root app now has a first stable domain contract layer in `lib/contracts/` co
 
 - domain entities for room, member, location, midpoint, venue, vote, and finalized decision
 - route helpers for MVP URL generation
+- room state transitions for `open`, `finalized`, and `expired`
 
-These contracts are intended to stay stable while UI and server implementation iterate around them. Room state transitions and privacy policy helpers are defined next as separate contract tasks.
+These contracts are intended to stay stable while UI and server implementation iterate around them. Privacy policy helpers are defined next as a separate contract task.
 
 ## What Exists In `my-idea-app`
 
