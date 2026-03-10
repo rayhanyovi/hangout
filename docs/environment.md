@@ -18,7 +18,7 @@ Current optional server variables:
 
 - `DATABASE_URL`
   Default: unset
-  When present, room persistence uses PostgreSQL for rooms, members, votes, and venue cache instead of the fallback temp-file store. Apply `db/schema.sql` with `npm run db:push` before first use.
+  When present, room persistence uses PostgreSQL for rooms, members, votes, and venue cache instead of the fallback temp-file store. Run `npm run db:migrate` before first use.
 
 - `HANGOUT_ENABLE_STRUCTURED_LOGS`
   Default: `true`
@@ -47,7 +47,7 @@ Current optional server variables:
 ## Local Development
 
 1. Copy `.env.example` to `.env.local` only if you need custom overrides.
-2. If you want durable room persistence locally, set `DATABASE_URL` and run `npm run db:push`.
+2. If you want durable room persistence locally, set `DATABASE_URL` and run `npm run db:migrate`.
 3. If `DATABASE_URL` is omitted, the app falls back to a temporary JSON room store under the OS temp directory.
 4. Keep real secrets out of git-tracked env files.
 5. Use `npm run dev` for local development after env changes.
@@ -56,5 +56,6 @@ Current optional server variables:
 
 - There are no `NEXT_PUBLIC_` variables in use yet.
 - Vercel production deployments should treat `DATABASE_URL` as required even though the local fallback store still exists.
+- `db/migrations/` is now the canonical schema history; `db/schema.sql` is the latest consolidated snapshot.
 - `HANGOUT_ROOM_STORE_DIR` is now mainly for local development, CI, or test environments that intentionally skip PostgreSQL.
 - Venue cache and rate limit values are best-effort in-memory controls in the Node.js runtime, not a shared distributed cache.

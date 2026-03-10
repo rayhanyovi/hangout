@@ -22,13 +22,13 @@ This file records the current Vercel deployment posture for the root Next.js app
 ## Durable Persistence Requirement
 
 - Set `DATABASE_URL` in Vercel project environment variables for any shared preview or production deployment
-- Apply `db/schema.sql` before first traffic with `npm run db:push` or the equivalent SQL execution flow in your database provider
+- Run `npm run db:migrate` before first traffic so versioned SQL migrations are applied in order
 - If `DATABASE_URL` is omitted, the app falls back to a temporary runtime file store; that fallback is acceptable for local development but not for durable Vercel environments
 
 ## Deployment Checklist
 
 1. Set up the Vercel project against the root app, not `/my-idea-app`
 2. Keep the package manager as `npm`
-3. Provision PostgreSQL, set `DATABASE_URL`, and apply `db/schema.sql`
+3. Provision PostgreSQL, set `DATABASE_URL`, and run `npm run db:migrate`
 4. Add any remaining optional env overrides only through Vercel project environment variables
 5. Verify room create, join, vote, and finalize flows against the deployed database before production cutover

@@ -75,10 +75,10 @@ Checklist convention:
 
 ## Next Phase
 
-- [ ] Provision PostgreSQL in the target environment and apply `db/schema.sql`
+- [ ] Provision PostgreSQL in the target environment and run `npm run db:migrate`
 - [ ] Configure Vercel project environment variables and execute the first durable preview deployment
 - [ ] Run deployed smoke tests for room create, join, vote, and finalize against the live database
-- [ ] Add an automated database migration workflow so schema changes do not rely only on `db:push`
+- [x] Add an automated database migration workflow so schema changes do not rely only on `db:push`
 - [ ] Add scheduled TTL cleanup for expired rooms outside the current request-driven pruning path
 - [ ] Add end-to-end smoke coverage for the core room flow
 - [ ] Add address search or pin-on-map location input beyond raw coordinates

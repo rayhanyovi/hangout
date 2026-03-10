@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "db:push": "node scripts/apply-db-schema.mjs",
+    "db:migrate": "node scripts/run-db-migrations.mjs",
+    "db:push": "npm run db:migrate",
+    "db:schema:apply": "node scripts/apply-db-schema.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

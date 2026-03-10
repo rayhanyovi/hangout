@@ -11,7 +11,7 @@ const schemaPath = path.join(__dirname, "..", "db", "schema.sql");
 
 async function main() {
   if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required to apply db/schema.sql.");
+    throw new Error("DATABASE_URL is required to apply the db/schema.sql snapshot.");
   }
 
   const schemaSql = await readFile(schemaPath, "utf8");
@@ -29,7 +29,7 @@ async function main() {
 
   try {
     await client.query(schemaSql);
-    console.log("Applied PostgreSQL schema from db/schema.sql.");
+    console.log("Applied PostgreSQL schema snapshot from db/schema.sql.");
   } finally {
     await client.end();
   }
