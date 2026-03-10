@@ -125,6 +125,7 @@ Recommended target shape for the production app:
 - Persistence layer: PostgreSQL as the system of record for rooms, members, votes, and venue cache metadata
 - Persistence access: server-only repository layer
 - Expiry handling: room rows carry `expires_at`, with scheduled cleanup every 15 minutes
+- Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
 
 ## Working Assumption For Future Tasks
 
