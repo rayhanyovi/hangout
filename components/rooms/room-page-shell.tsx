@@ -583,7 +583,7 @@ export function RoomPageShell({
                   {inviteLink}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Link
                   href="/rooms/new"
                   className="flex-1 rounded-full border border-line bg-surface px-4 py-3 text-center font-semibold transition hover:-translate-y-0.5"

@@ -23,6 +23,7 @@ This repository currently contains two separate app states:
 - Room persistence is still backed by a temporary JSON store in the OS temp directory; PostgreSQL remains the intended production persistence target
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
+- Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - The Lovable export is now reference-only for parity review and migration checks, not the primary working app
 
 ## Root App Structure

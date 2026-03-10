@@ -61,7 +61,7 @@ Checklist convention:
 - [x] Add rate limiting and caching around venue search
 - [x] Add analytics and operational logging for key room events
 - [x] Add environment variable documentation and example config
-- [ ] Validate mobile usability and responsive behavior
+- [x] Validate mobile usability and responsive behavior
 - [ ] Prepare Vercel deployment configuration and runtime assumptions
 
 ## Cutover
