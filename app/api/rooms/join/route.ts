@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logOperationalEvent } from "@/lib/server/observability/logger";
 import { joinRoom } from "@/lib/server/rooms/repository";
 import { joinRoomSchema } from "@/lib/validation";
 
@@ -10,6 +11,10 @@ export async function POST(request: NextRequest) {
   const parsed = joinRoomSchema.safeParse(payload);
 
   if (!parsed.success) {
+    logOperationalEvent("room_join_invalid_payload", {
+      issueCount: parsed.error.issues.length,
+    });
+
     return NextResponse.json(
       {
         error: "invalid_payload",
@@ -24,6 +29,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(output, { status: 201 });
   } catch (error) {
+    logOperationalEvent("room_join_failed", {
+      joinCode: parsed.data.joinCode,
+      errorCode: "join_failed",
+      message: error instanceof Error ? error.message : "Join request failed.",
+    });
+
     return NextResponse.json(
       {
         error: "join_failed",

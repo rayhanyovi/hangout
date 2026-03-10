@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logOperationalEvent } from "@/lib/server/observability/logger";
 import { castVote } from "@/lib/server/rooms/repository";
 import { castVoteSchema } from "@/lib/validation";
 
@@ -26,6 +27,11 @@ export async function POST(
   });
 
   if (!parsed.success) {
+    logOperationalEvent("vote_invalid_payload", {
+      joinCode: joinCode.toUpperCase(),
+      issueCount: parsed.error.issues.length,
+    });
+
     return NextResponse.json(
       {
         error: "invalid_payload",
@@ -46,6 +52,14 @@ export async function POST(
 
     return NextResponse.json(output, { status: 201 });
   } catch (error) {
+    logOperationalEvent("vote_failed", {
+      joinCode: joinCode.toUpperCase(),
+      memberId: parsed.data.memberId,
+      venueId: parsed.data.venueId,
+      errorCode: "vote_failed",
+      message: error instanceof Error ? error.message : "Vote request failed.",
+    });
+
     return NextResponse.json(
       {
         error: "vote_failed",

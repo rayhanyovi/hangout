@@ -22,6 +22,7 @@ This repository currently contains two separate app states:
 - The root Next.js app now covers the active MVP path: create room, join room, share location, compute midpoint and fairness, retrieve venue candidates, vote, finalize, and render a decision summary
 - Room persistence is still backed by a temporary JSON store in the OS temp directory; PostgreSQL remains the intended production persistence target
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
+- Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - The Lovable export is now reference-only for parity review and migration checks, not the primary working app
 
 ## Root App Structure

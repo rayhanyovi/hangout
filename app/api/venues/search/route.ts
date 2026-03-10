@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  logOperationalEvent,
+  trackAnalyticsEvent,
+} from "@/lib/server/observability/logger";
 import { setRoomVenueCache } from "@/lib/server/rooms/repository";
 import {
   searchRoomVenues,
@@ -30,6 +34,7 @@ function getRequesterKey(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now();
   const searchParams = request.nextUrl.searchParams;
   const joinCode = searchParams.get("joinCode")?.trim().toUpperCase();
   const categories = parseCommaSeparatedList(searchParams.get("categories")).filter(
@@ -54,6 +59,11 @@ export async function GET(request: NextRequest) {
   });
 
   if (!parsed.success) {
+    logOperationalEvent("venue_search_invalid_query", {
+      joinCode,
+      issueCount: parsed.error.issues.length,
+    });
+
     return NextResponse.json(
       {
         error: "invalid_query",
@@ -72,6 +82,15 @@ export async function GET(request: NextRequest) {
     if (joinCode) {
       await setRoomVenueCache(joinCode, result.venues);
     }
+
+    trackAnalyticsEvent("venue_search_completed", {
+      joinCode,
+      resultCount: result.venues.length,
+      cacheStatus: result.cacheStatus,
+      rateLimited: result.rateLimit.limited,
+      rateLimitScope: result.rateLimit.scope,
+      durationMs: Date.now() - startedAt,
+    });
 
     return NextResponse.json(
       {
@@ -94,6 +113,12 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof VenueSearchRateLimitError) {
+      logOperationalEvent("venue_search_rate_limited", {
+        joinCode,
+        retryAfterSeconds: error.retryAfterSeconds,
+        durationMs: Date.now() - startedAt,
+      });
+
       return NextResponse.json(
         {
           error: "rate_limited",
@@ -108,6 +133,20 @@ export async function GET(request: NextRequest) {
         },
       );
     }
+
+    logOperationalEvent(
+      "venue_search_failed",
+      {
+        joinCode,
+        errorCode: "provider_unavailable",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Venue provider request failed.",
+        durationMs: Date.now() - startedAt,
+      },
+      "error",
+    );
 
     return NextResponse.json(
       {

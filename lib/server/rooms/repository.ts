@@ -27,6 +27,7 @@ import {
 } from "@/lib/contracts";
 import { buildMidpointFairnessSummary } from "@/lib/rooms";
 import { LOCATION_RETENTION_POLICY } from "@/lib/contracts/privacy";
+import { trackAnalyticsEvent } from "@/lib/server/observability/logger";
 
 type RoomStoreFile = {
   rooms: Room[];
@@ -207,6 +208,14 @@ export async function createRoom(
   };
 
   await writeStore(nextStore);
+  trackAnalyticsEvent("room_created", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    hostMemberId: persistedHostMember.memberId,
+    privacyMode: room.privacyMode,
+    transportMode: room.transportMode,
+    venueCategoryCount: room.venuePreferences.categories.length,
+  });
 
   return {
     room,
@@ -234,6 +243,13 @@ export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
   };
 
   await writeStore(nextStore);
+  trackAnalyticsEvent("room_joined", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    memberId: member.memberId,
+    role: member.role,
+    memberCount: nextStore.members.filter((candidate) => candidate.roomId === room.roomId).length,
+  });
 
   return {
     room,
@@ -307,6 +323,14 @@ export async function updateMemberLocation(
   };
 
   await writeStore(nextStore);
+  trackAnalyticsEvent("member_location_updated", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    memberId,
+    privacyMode: room.privacyMode,
+    locatedMemberCount: roomMembers.filter((member) => member.location !== null).length,
+    midpointReady: midpoint !== null,
+  });
 
   return {
     snapshot: buildSnapshot(nextStore, nextRoom),
@@ -413,6 +437,13 @@ export async function castVote(
   };
 
   await writeStore(nextStore);
+  trackAnalyticsEvent("vote_cast", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    memberId,
+    venueId,
+    totalVotes: nextVotes.filter((candidate) => candidate.roomId === room.roomId).length,
+  });
 
   return {
     vote,
@@ -478,6 +509,12 @@ export async function finalizeRoom(
   };
 
   await writeStore(nextStore);
+  trackAnalyticsEvent("room_finalized", {
+    roomId: room.roomId,
+    joinCode: room.joinCode,
+    finalizedByMemberId: memberId,
+    venueId,
+  });
 
   return {
     decision,

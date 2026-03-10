@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logOperationalEvent } from "@/lib/server/observability/logger";
 import { finalizeRoom } from "@/lib/server/rooms/repository";
 import { finalizeRoomSchema } from "@/lib/validation";
 
@@ -24,6 +25,11 @@ export async function POST(
   });
 
   if (!parsed.success) {
+    logOperationalEvent("room_finalize_invalid_payload", {
+      joinCode: joinCode.toUpperCase(),
+      issueCount: parsed.error.issues.length,
+    });
+
     return NextResponse.json(
       {
         error: "invalid_payload",
@@ -43,6 +49,15 @@ export async function POST(
 
     return NextResponse.json(output, { status: 201 });
   } catch (error) {
+    logOperationalEvent("room_finalize_failed", {
+      joinCode: joinCode.toUpperCase(),
+      memberId: parsed.data.memberId,
+      venueId: parsed.data.venueId,
+      errorCode: "finalize_failed",
+      message:
+        error instanceof Error ? error.message : "Finalize request failed.",
+    });
+
     return NextResponse.json(
       {
         error: "finalize_failed",

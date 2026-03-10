@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logOperationalEvent } from "@/lib/server/observability/logger";
 import { getRoomSnapshot, updateMemberLocation } from "@/lib/server/rooms/repository";
 import { updateMemberLocationSchema } from "@/lib/validation";
 
@@ -44,6 +45,11 @@ export async function PATCH(
   });
 
   if (!parsed.success) {
+    logOperationalEvent("location_update_invalid_payload", {
+      joinCode: joinCode.toUpperCase(),
+      issueCount: parsed.error.issues.length,
+    });
+
     return NextResponse.json(
       {
         error: "invalid_payload",
@@ -62,6 +68,16 @@ export async function PATCH(
 
     return NextResponse.json(output);
   } catch (error) {
+    logOperationalEvent("location_update_failed", {
+      joinCode: joinCode.toUpperCase(),
+      memberId: parsed.data.memberId,
+      errorCode: "update_failed",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Location update request failed.",
+    });
+
     return NextResponse.json(
       {
         error: "update_failed",
