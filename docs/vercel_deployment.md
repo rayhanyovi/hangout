@@ -38,3 +38,30 @@ This file records the current Vercel deployment posture for the root Next.js app
 4. Set `CRON_SECRET` before enabling scheduled cleanup in production
 5. Add any remaining optional env overrides only through Vercel project environment variables
 6. Verify room create, join, vote, finalize, and scheduled cleanup flows against the deployed database before production cutover
+
+## First Preview Smoke Profile
+
+For the first durable preview deployment, prefer deterministic provider settings so the smoke test isolates Vercel + PostgreSQL behavior instead of third-party venue volatility:
+
+- `DATABASE_URL=<preview postgres url>`
+- `CRON_SECRET=<random 16+ char secret>`
+- `HANGOUT_USE_FIXTURE_VENUES=true`
+- `HANGOUT_USE_FIXTURE_ROUTING=true`
+- `HANGOUT_ROUTING_PROVIDER=mapbox`
+- `HANGOUT_ENABLE_STRUCTURED_LOGS=true`
+
+This keeps the deployment durable because the database is real, while venue and routing providers stay deterministic during first preview verification.
+
+## Deployed Smoke Command
+
+Once the preview URL exists, run the browser smoke suite against it directly:
+
+```bash
+HANGOUT_SMOKE_BASE_URL=https://<preview-url> npm run test:e2e:deployed
+```
+
+Optional test-runner overrides for non-fixture deployments:
+
+- `HANGOUT_SMOKE_EXPECT_FIXTURES=false`
+- `HANGOUT_SMOKE_EXPECTED_VENUE_NAME=<expected finalized venue name>`
+- `HANGOUT_SMOKE_EXPECTED_MAP_URL=<expected map url>`

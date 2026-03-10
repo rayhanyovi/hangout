@@ -24,6 +24,7 @@ This repository now has one active application state:
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Local browser-level smoke coverage now exists for the create, join, location share, vote, finalize, and decision flow via Playwright
+- A deployed smoke harness now exists via `npm run test:e2e:deployed` so preview or production URLs can be exercised without spinning up a local dev server
 - Member location input now supports pin-on-map selection in addition to GPS capture and raw coordinate entry
 - Fairness shell now upgrades from heuristic ETA to provider-backed route durations when Mapbox routing env is configured, with heuristic fallback kept for local/offline or unsupported modes
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`

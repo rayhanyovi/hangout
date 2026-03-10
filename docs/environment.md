@@ -93,6 +93,7 @@ Current optional server variables:
 ## Current Notes
 
 - There are no `NEXT_PUBLIC_` variables in use yet.
+- `HANGOUT_SMOKE_BASE_URL`, `HANGOUT_SMOKE_EXPECT_FIXTURES`, and related `HANGOUT_SMOKE_EXPECTED_*` values are test-runner variables for Playwright deployed smoke, not app runtime variables.
 - Vercel production deployments should treat `DATABASE_URL` as required even though the local fallback store still exists.
 - Vercel production deployments should also set `CRON_SECRET`, because the checked-in cron route rejects unauthenticated cleanup requests.
 - Mapbox routing is optional; if `MAPBOX_ACCESS_TOKEN` is absent or `HANGOUT_ROUTING_PROVIDER` stays `heuristic`, the fairness shell falls back to the local ETA model automatically.

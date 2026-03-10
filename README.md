@@ -23,12 +23,14 @@ Buka [http://localhost:3000](http://localhost:3000).
 - `npm run lint`
 - `npm run test`
 - `npm run test:e2e`
+- `npm run test:e2e:deployed` with `HANGOUT_SMOKE_BASE_URL=https://<preview-url>`
 
 ## Project References
 
 - `docs/overview.md` untuk peta konteks teknikal dan produk
 - `docs/to_dos.md` untuk tracking pekerjaan
 - `docs/workflow_contract.md` untuk aturan kerja agent dan developer
+- `docs/deployment_smoke.md` untuk langkah smoke test terhadap deployment preview/live
 - `docs/Project Hangout - Unified PRD + BRD.txt` untuk source requirement awal
 
 ## Notes

@@ -8,6 +8,7 @@
 - `docs/parity_review.md` records the final prototype-vs-root cutover review.
 - `docs/environment.md` documents runtime and deployment-facing environment variables.
 - `docs/vercel_deployment.md` documents Vercel-specific deployment assumptions and checked-in runtime config.
+- `docs/deployment_smoke.md` documents how to run Playwright against a deployed URL once preview or production access exists.
 
 ## Core Agreement
 

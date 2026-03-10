@@ -1,5 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const expectFixtureProviders =
+  process.env.HANGOUT_SMOKE_EXPECT_FIXTURES !== "false";
+const expectedFixtureVenueId =
+  process.env.HANGOUT_SMOKE_EXPECTED_VENUE_ID ?? "kopi-tengah";
+const expectedFixtureVenueName =
+  process.env.HANGOUT_SMOKE_EXPECTED_VENUE_NAME ?? "Kopi Tengah";
+const expectedRoutingLabel =
+  process.env.HANGOUT_SMOKE_EXPECTED_ROUTING_LABEL ??
+  "Mapbox Matrix driving proxy";
+const expectedFixtureMapUrl =
+  process.env.HANGOUT_SMOKE_EXPECTED_MAP_URL ??
+  "https://maps.example.com/kopi-tengah";
+
 async function setManualCoordinates(
   page: Page,
   memberId: string,
@@ -95,9 +108,18 @@ test("core room flow works across create, join, vote, and finalize", async ({
   await setLocationFromMapPin(hostPage, hostMemberId!);
   await setManualCoordinates(memberPage, memberId!, "-6.2297", "106.8300");
 
-  await expect(hostPage.getByTestId("venue-card-kopi-tengah")).toBeVisible();
-  await expect(memberPage.getByTestId("venue-card-kopi-tengah")).toBeVisible();
-  await expect(hostPage.getByText("Mapbox Matrix driving proxy")).toBeVisible();
+  if (expectFixtureProviders) {
+    await expect(
+      hostPage.getByTestId(`venue-card-${expectedFixtureVenueId}`),
+    ).toBeVisible();
+    await expect(
+      memberPage.getByTestId(`venue-card-${expectedFixtureVenueId}`),
+    ).toBeVisible();
+    await expect(hostPage.getByText(expectedRoutingLabel)).toBeVisible();
+  } else {
+    await expect(hostPage.getByTestId(/^venue-card-/).first()).toBeVisible();
+    await expect(memberPage.getByTestId(/^venue-card-/).first()).toBeVisible();
+  }
 
   await Promise.all([
     memberPage.waitForResponse(
@@ -132,18 +154,30 @@ test("core room flow works across create, join, vote, and finalize", async ({
   ).toBeVisible();
 
   await hostPage.goto(`${baseURL}/r/${joinCode}/decision`);
-  await expect(
-    hostPage.getByRole("heading", { name: "Kopi Tengah" }),
-  ).toBeVisible();
+  if (expectFixtureProviders) {
+    await expect(
+      hostPage.getByRole("heading", { name: expectedFixtureVenueName }),
+    ).toBeVisible();
+  } else {
+    await expect(
+      hostPage.locator("article").filter({ hasText: "Finalized venue" }),
+    ).toBeVisible();
+  }
   await expect(
     hostPage
       .locator("article")
       .filter({ hasText: "Votes locked" })
       .getByText("2 vote(s)"),
   ).toBeVisible();
-  await expect(
-    hostPage.getByRole("link", { name: "Open in Maps" }),
-  ).toHaveAttribute("href", "https://maps.example.com/kopi-tengah");
+  if (expectFixtureProviders) {
+    await expect(
+      hostPage.getByRole("link", { name: "Open in Maps" }),
+    ).toHaveAttribute("href", expectedFixtureMapUrl);
+  } else {
+    await expect(
+      hostPage.getByRole("link", { name: "Open in Maps" }),
+    ).toHaveAttribute("href", /.+/);
+  }
 
   await context.close();
 });
