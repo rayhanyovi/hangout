@@ -1,9 +1,19 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Compass, MapPinned, ShieldCheck, TimerReset, Users } from "lucide-react";
+import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
 import { type VenueCategory, getRoomDecisionRoute, getRoomRoute } from "@/lib/contracts";
-import type { DraftRoomSeed } from "@/lib/rooms";
+import {
+  buildDraftRoomMembers,
+  createPendingDraftRoomMember,
+  memberHasLocation,
+  type DraftRoomMember,
+  type DraftRoomSeed,
+} from "@/lib/rooms";
 import { computeGeometricMedian, haversineKm } from "@/lib/math";
 import { RoomMap } from "@/components/maps/room-map";
+import { RoomMemberManager } from "@/components/rooms/room-member-manager";
 
 type RoomPageShellProps = {
   joinCode: string;
@@ -42,56 +52,7 @@ const SAMPLE_VENUES: Record<
   ],
 };
 
-const PREVIEW_COORDINATES = [
-  { lat: -6.2088, lng: 106.8456 },
-  { lat: -6.1967, lng: 106.8247 },
-  { lat: -6.1894, lng: 106.8229 },
-] as const;
 const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
-
-function buildRoomMembers(draftSeed: DraftRoomSeed) {
-  const host = {
-    id: "host",
-    name: draftSeed.hostDisplayName,
-    role: "Host",
-    status: "Lokasi siap",
-    lat: PREVIEW_COORDINATES[0].lat,
-    lng: PREVIEW_COORDINATES[0].lng,
-    shareState: "shared",
-  };
-
-  const guest = draftSeed.guestDisplayName
-    ? {
-        id: "guest",
-        name: draftSeed.guestDisplayName,
-        role: "Member",
-        status: "Baru join ke shell preview",
-        lat: PREVIEW_COORDINATES[1].lat,
-        lng: PREVIEW_COORDINATES[1].lng,
-        shareState: "shared",
-      }
-    : {
-        id: "invite-slot",
-        name: "Invite slot",
-        role: "Member",
-        status: "Menunggu anggota berikutnya",
-        lat: PREVIEW_COORDINATES[1].lat,
-        lng: PREVIEW_COORDINATES[1].lng,
-        shareState: "pending",
-      };
-
-  const thirdMember = {
-    id: "member-3",
-    name: "Member 3",
-    role: "Member",
-    status: "Preview participant",
-    lat: PREVIEW_COORDINATES[2].lat,
-    lng: PREVIEW_COORDINATES[2].lng,
-    shareState: "shared",
-  };
-
-  return [host, guest, thirdMember];
-}
 
 function buildVenuePreview(draftSeed: DraftRoomSeed) {
   const categories: VenueCategory[] =
@@ -103,14 +64,26 @@ function buildVenuePreview(draftSeed: DraftRoomSeed) {
 }
 
 export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
-  const members = buildRoomMembers(draftSeed);
-  const mappedMembers = members.map((member) => ({
-    id: member.id,
-    name: member.name,
-    lat: member.lat,
-    lng: member.lng,
-  }));
-  const midpoint = computeGeometricMedian(mappedMembers);
+  const [members, setMembers] = useState<DraftRoomMember[]>(() =>
+    buildDraftRoomMembers(draftSeed),
+  );
+  const mappedMembers = useMemo(
+    () =>
+      members.filter(memberHasLocation).map((member) => ({
+        id: member.id,
+        name: member.displayName,
+        lat: member.location.lat,
+        lng: member.location.lng,
+      })),
+    [members],
+  );
+  const midpoint = useMemo(() => {
+    if (mappedMembers.length < 2) {
+      return null;
+    }
+
+    return computeGeometricMedian(mappedMembers);
+  }, [mappedMembers]);
   const venues = buildVenuePreview(draftSeed);
 
   const fairnessRows = midpoint
@@ -122,6 +95,16 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
     : [];
 
   const inviteLink = getRoomRoute(joinCode);
+
+  const handleAddMember = (displayName: string) => {
+    setMembers((current) => [...current, createPendingDraftRoomMember(displayName)]);
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    setMembers((current) =>
+      current.filter((member) => member.id !== memberId || member.role === "host"),
+    );
+  };
 
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
@@ -218,41 +201,12 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
 
         <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="space-y-6">
-            <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted" />
-                <h2 className="text-lg font-semibold text-foreground">
-                  Members shell
-                </h2>
-              </div>
-              <div className="mt-5 space-y-3">
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-start justify-between gap-4 rounded-[1.4rem] border border-line bg-white/78 p-4"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {member.name}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted">
-                        {member.role}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-ink-soft">
-                        {member.status}
-                      </p>
-                      <p className="mt-1 text-xs text-muted">
-                        {member.shareState === "shared"
-                          ? "location shared"
-                          : "location pending"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
+            <RoomMemberManager
+              inviteLink={inviteLink}
+              members={members}
+              onAddMember={handleAddMember}
+              onRemoveMember={handleRemoveMember}
+            />
 
             <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
@@ -297,22 +251,29 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                   Fairness shell
                 </p>
-                <div className="mt-5 space-y-3">
-                  {fairnessRows.map((row) => (
-                    <div key={row.id}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-foreground">{row.name}</span>
-                        <span className="text-muted">{row.distanceKm.toFixed(1)} km</span>
+                {fairnessRows.length > 0 ? (
+                  <div className="mt-5 space-y-3">
+                    {fairnessRows.map((row) => (
+                      <div key={row.id}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-foreground">{row.name}</span>
+                          <span className="text-muted">{row.distanceKm.toFixed(1)} km</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
+                          <div
+                            className="h-full rounded-full bg-teal"
+                            style={{ width: `${Math.min(100, (row.distanceKm / 12) * 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
-                        <div
-                          className="h-full rounded-full bg-teal"
-                          style={{ width: `${Math.min(100, (row.distanceKm / 12) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-5 text-sm leading-7 text-muted">
+                    Fairness summary will appear after at least two members have
+                    shared a location in the room shell.
+                  </p>
+                )}
               </article>
 
               <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">

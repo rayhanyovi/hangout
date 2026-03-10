@@ -46,7 +46,7 @@ Checklist convention:
 
 - [x] Build the landing/create-room flow
 - [x] Build the room page route and shell
-- [ ] Migrate member management UI from the prototype into root Next.js
+- [x] Migrate member management UI from the prototype into root Next.js
 - [ ] Implement privacy-aware location input flows
 - [ ] Implement midpoint computation and fairness summary
 - [ ] Implement venue retrieval, scoring, filtering, and list rendering
