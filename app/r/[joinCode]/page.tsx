@@ -45,6 +45,8 @@ export default async function RoomPage({
       initialMembers={mapSnapshotMembersToDraftMembers(snapshot)}
       liveRoomContext={{
         currentMemberId: currentMemberId ?? null,
+        initialVotes: snapshot.votes,
+        finalizedVenueId: snapshot.room.finalizedDecision?.venueId ?? null,
       }}
     />
   );

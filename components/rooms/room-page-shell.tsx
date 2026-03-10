@@ -8,6 +8,7 @@ import {
   getRoomRoute,
   type MemberLocation,
   type RoomSnapshot,
+  type Vote,
   type VenueCategory,
 } from "@/lib/contracts";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/lib/rooms";
 import { RoomMap } from "@/components/maps/room-map";
 import { RoomMemberManager } from "@/components/rooms/room-member-manager";
+import { RoomVotingPanel } from "@/components/rooms/room-voting-panel";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 import { JoinRoomInline } from "@/components/rooms/join-room-inline";
 
@@ -31,6 +33,8 @@ type RoomPageShellProps = {
   initialMembers?: DraftRoomMember[];
   liveRoomContext?: {
     currentMemberId: string | null;
+    initialVotes?: Vote[];
+    finalizedVenueId?: string | null;
   };
 };
 
@@ -40,6 +44,11 @@ type VenueSearchResponse = {
 };
 
 type RoomUpdateResponse = {
+  snapshot: RoomSnapshot;
+  message?: string;
+};
+
+type VoteMutationResponse = {
   snapshot: RoomSnapshot;
   message?: string;
 };
@@ -64,6 +73,12 @@ export function RoomPageShell({
     VenueCategory[]
   >([]);
   const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
+  const [votes, setVotes] = useState<Vote[]>(() => liveRoomContext?.initialVotes ?? []);
+  const [finalizedVenueId, setFinalizedVenueId] = useState<string | null>(
+    () => liveRoomContext?.finalizedVenueId ?? null,
+  );
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [isVoteSubmitting, setIsVoteSubmitting] = useState(false);
 
   const mappedMembers = useMemo(
     () =>
@@ -102,6 +117,8 @@ export function RoomPageShell({
     [requestedVenueCategories, venues],
   );
   const currentMemberId = liveRoomContext?.currentMemberId ?? null;
+  const hostMemberId =
+    members.find((member) => member.role === "host")?.id ?? null;
   const viewerHasJoined =
     !isLiveRoom ||
     (currentMemberId !== null &&
@@ -186,6 +203,8 @@ export function RoomPageShell({
       }
 
       setMembers(mapSnapshotMembersToDraftMembers(payload.snapshot));
+      setVotes(payload.snapshot.votes);
+      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
       setRoomSyncError(null);
     } catch (error) {
       setRoomSyncError(
@@ -206,6 +225,78 @@ export function RoomPageShell({
 
       return [...current, category];
     });
+  };
+
+  const handleCastVote = async (venueId: string) => {
+    if (!isLiveRoom || !currentMemberId) {
+      return;
+    }
+
+    setIsVoteSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/rooms/${joinCode}/votes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberId: currentMemberId,
+          venueId,
+        }),
+      });
+      const payload = (await response.json()) as VoteMutationResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Vote update failed.");
+      }
+
+      setVotes(payload.snapshot.votes);
+      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+      setVoteError(null);
+    } catch (error) {
+      setVoteError(
+        error instanceof Error ? error.message : "Vote update failed.",
+      );
+    } finally {
+      setIsVoteSubmitting(false);
+    }
+  };
+
+  const handleFinalizeVenue = async (venueId: string) => {
+    if (!isLiveRoom || !currentMemberId) {
+      return;
+    }
+
+    setIsVoteSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/rooms/${joinCode}/finalize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberId: currentMemberId,
+          venueId,
+        }),
+      });
+      const payload = (await response.json()) as VoteMutationResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Room finalization failed.");
+      }
+
+      setVotes(payload.snapshot.votes);
+      setFinalizedVenueId(payload.snapshot.room.finalizedDecision?.venueId ?? null);
+      setVoteError(null);
+    } catch (error) {
+      setVoteError(
+        error instanceof Error ? error.message : "Room finalization failed.",
+      );
+    } finally {
+      setIsVoteSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -234,6 +325,8 @@ export function RoomPageShell({
 
         if (!cancelled) {
           setMembers(mapSnapshotMembersToDraftMembers(snapshot));
+          setVotes(snapshot.votes);
+          setFinalizedVenueId(snapshot.room.finalizedDecision?.venueId ?? null);
           setRoomSyncError(null);
         }
       } catch (error) {
@@ -276,6 +369,10 @@ export function RoomPageShell({
 
     if (draftSeed.budget) {
       params.set("budget", draftSeed.budget);
+    }
+
+    if (isLiveRoom) {
+      params.set("joinCode", joinCode);
     }
 
     setIsVenueLoading(true);
@@ -323,6 +420,8 @@ export function RoomPageShell({
     draftSeed.budget,
     requestedCategoryParam,
     requestedTagParam,
+    isLiveRoom,
+    joinCode,
   ]);
 
   useEffect(() => {
@@ -549,17 +648,34 @@ export function RoomPageShell({
                 )}
               </article>
 
-              <VenueShortlist
-                venues={venues}
-                activeCategories={activeVenueCategories}
-                onToggleCategory={handleToggleVenueCategory}
-                onSelectVenue={setSelectedVenueId}
-                isLoading={isVenueLoading}
-                errorMessage={venueError}
-                categories={availableVenueFilters}
-                hasMidpoint={midpoint !== null}
-                selectedVenueId={selectedVenueId}
-              />
+              <div className="space-y-6">
+                <VenueShortlist
+                  venues={venues}
+                  activeCategories={activeVenueCategories}
+                  onToggleCategory={handleToggleVenueCategory}
+                  onSelectVenue={setSelectedVenueId}
+                  isLoading={isVenueLoading}
+                  errorMessage={venueError}
+                  categories={availableVenueFilters}
+                  hasMidpoint={midpoint !== null}
+                  selectedVenueId={selectedVenueId}
+                />
+
+                {isLiveRoom ? (
+                  <RoomVotingPanel
+                    venues={venues}
+                    votes={votes}
+                    selectedVenueId={selectedVenueId}
+                    currentMemberId={currentMemberId}
+                    hostMemberId={hostMemberId}
+                    finalizedVenueId={finalizedVenueId}
+                    isSubmitting={isVoteSubmitting}
+                    errorMessage={voteError}
+                    onVote={handleCastVote}
+                    onFinalize={handleFinalizeVenue}
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         </section>

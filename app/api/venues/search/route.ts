@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { setRoomVenueCache } from "@/lib/server/rooms/repository";
 import { searchRoomVenues } from "@/lib/server/venues/search";
 import { searchVenuesSchema } from "@/lib/validation";
 import { VENUE_CATEGORIES, type VenueCategory } from "@/lib/contracts";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function parseCommaSeparatedList(value: string | null) {
@@ -51,6 +53,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const venues = await searchRoomVenues(parsed.data);
+    const joinCode = searchParams.get("joinCode")?.trim().toUpperCase();
+
+    if (joinCode) {
+      await setRoomVenueCache(joinCode, venues);
+    }
 
     return NextResponse.json({
       venues,
