@@ -2,9 +2,9 @@
   "name": "hangout",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@11.6.1",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "db:migrate": "node scripts/run-db-migrations.mjs",
     "db:push": "npm run db:migrate",

@@ -15,9 +15,15 @@ npm run dev
 
 Buka [http://localhost:3000](http://localhost:3000).
 
+Catatan:
+`npm run dev` saat ini sengaja memakai webpack dev server. `npm run dev:turbo`
+disediakan terpisah karena resolver Turbopack sempat salah membaca parent
+folder workspace pada mesin ini.
+
 ## Core Scripts
 
 - `npm run dev`
+- `npm run dev:turbo`
 - `npm run build`
 - `npm run start`
 - `npm run lint`
