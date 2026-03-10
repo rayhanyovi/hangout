@@ -1,4 +1,4 @@
-import type { Coordinate, TransportMode } from "@/lib/contracts";
+import type { Coordinate, FairnessEtaOutput, TransportMode } from "@/lib/contracts";
 import { computeGeometricMedian, haversineKm } from "@/lib/math";
 
 export type FairnessMemberInput = Coordinate & {
@@ -23,6 +23,9 @@ export type FairnessSummary = {
   furthestEtaMin: number | null;
   spreadEtaMin: number | null;
   transportMode: TransportMode;
+  etaSource: FairnessEtaOutput["source"];
+  etaProviderLabel: string;
+  etaNote: string | null;
 };
 
 export const TRANSPORT_ETA_PROFILES: Record<
@@ -55,6 +58,44 @@ export const TRANSPORT_ETA_PROFILES: Record<
   },
 };
 
+function buildEmptySummary(transportMode: TransportMode): FairnessSummary {
+  return {
+    midpoint: null,
+    rows: [],
+    averageDistanceKm: null,
+    furthestDistanceKm: null,
+    spreadKm: null,
+    averageEtaMin: null,
+    furthestEtaMin: null,
+    spreadEtaMin: null,
+    transportMode,
+    etaSource: "heuristic",
+    etaProviderLabel: `Heuristic ETA (${TRANSPORT_ETA_PROFILES[transportMode].label})`,
+    etaNote: "Estimated from straight-line distance and a fixed transport profile.",
+  };
+}
+
+function summarizeEtaMetrics(rows: FairnessSummaryRow[]) {
+  if (rows.length === 0) {
+    return {
+      averageEtaMin: null,
+      furthestEtaMin: null,
+      spreadEtaMin: null,
+    };
+  }
+
+  const etas = rows.map((row) => row.etaMin);
+  const totalEtaMin = etas.reduce((sum, etaMin) => sum + etaMin, 0);
+  const furthestEtaMin = Math.max(...etas);
+  const closestEtaMin = Math.min(...etas);
+
+  return {
+    averageEtaMin: totalEtaMin / rows.length,
+    furthestEtaMin,
+    spreadEtaMin: furthestEtaMin - closestEtaMin,
+  };
+}
+
 export function estimateTravelMinutes(
   distanceKm: number,
   transportMode: TransportMode,
@@ -68,38 +109,53 @@ export function estimateTravelMinutes(
   );
 }
 
+export function applyFairnessEta(
+  summary: FairnessSummary,
+  etaOutput: Pick<
+    FairnessEtaOutput,
+    "rows" | "source" | "providerLabel" | "note"
+  >,
+): FairnessSummary {
+  if (summary.rows.length === 0) {
+    return {
+      ...summary,
+      etaSource: etaOutput.source,
+      etaProviderLabel: etaOutput.providerLabel,
+      etaNote: etaOutput.note,
+    };
+  }
+
+  const etaById = new Map(
+    etaOutput.rows.map((row) => [row.id, row.etaMin] as const),
+  );
+  const rows = summary.rows.map((row) => ({
+    ...row,
+    etaMin: etaById.get(row.id) ?? row.etaMin,
+  }));
+  const etaMetrics = summarizeEtaMetrics(rows);
+
+  return {
+    ...summary,
+    rows,
+    ...etaMetrics,
+    etaSource: etaOutput.source,
+    etaProviderLabel: etaOutput.providerLabel,
+    etaNote: etaOutput.note,
+  };
+}
+
 export function buildMidpointFairnessSummary(
   members: FairnessMemberInput[],
   transportMode: TransportMode = "motor",
 ): FairnessSummary {
   if (members.length < 2) {
-    return {
-      midpoint: null,
-      rows: [],
-      averageDistanceKm: null,
-      furthestDistanceKm: null,
-      spreadKm: null,
-      averageEtaMin: null,
-      furthestEtaMin: null,
-      spreadEtaMin: null,
-      transportMode,
-    };
+    return buildEmptySummary(transportMode);
   }
 
   const midpoint = computeGeometricMedian(members);
 
   if (!midpoint) {
-    return {
-      midpoint: null,
-      rows: [],
-      averageDistanceKm: null,
-      furthestDistanceKm: null,
-      spreadKm: null,
-      averageEtaMin: null,
-      furthestEtaMin: null,
-      spreadEtaMin: null,
-      transportMode,
-    };
+    return buildEmptySummary(transportMode);
   }
 
   const rows = members.map((member) => ({
@@ -113,13 +169,9 @@ export function buildMidpointFairnessSummary(
     etaMin: estimateTravelMinutes(row.distanceKm, transportMode),
   }));
   const distances = rowsWithEta.map((row) => row.distanceKm);
-  const etas = rowsWithEta.map((row) => row.etaMin);
   const totalDistanceKm = distances.reduce((sum, distance) => sum + distance, 0);
-  const totalEtaMin = etas.reduce((sum, etaMin) => sum + etaMin, 0);
   const furthestDistanceKm = Math.max(...distances);
   const closestDistanceKm = Math.min(...distances);
-  const furthestEtaMin = Math.max(...etas);
-  const closestEtaMin = Math.min(...etas);
 
   return {
     midpoint,
@@ -127,9 +179,10 @@ export function buildMidpointFairnessSummary(
     averageDistanceKm: totalDistanceKm / rowsWithEta.length,
     furthestDistanceKm,
     spreadKm: furthestDistanceKm - closestDistanceKm,
-    averageEtaMin: totalEtaMin / rowsWithEta.length,
-    furthestEtaMin,
-    spreadEtaMin: furthestEtaMin - closestEtaMin,
+    ...summarizeEtaMetrics(rowsWithEta),
     transportMode,
+    etaSource: "heuristic",
+    etaProviderLabel: `Heuristic ETA (${TRANSPORT_ETA_PROFILES[transportMode].label})`,
+    etaNote: "Estimated from straight-line distance and a fixed transport profile.",
   };
 }

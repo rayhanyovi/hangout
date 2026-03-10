@@ -1,4 +1,5 @@
 import type {
+  Coordinate,
   FinalizedDecision,
   JoinCode,
   Member,
@@ -74,6 +75,30 @@ export type ComputeMidpointInput = {
 export type ComputeMidpointOutput = {
   midpoint: Midpoint;
   snapshot: RoomSnapshot;
+};
+
+export type FairnessEtaInput = {
+  midpoint: Coordinate;
+  members: Array<
+    {
+      id: MemberId;
+      name: string;
+    } & Coordinate
+  >;
+  transportMode: TransportMode;
+  joinCode?: JoinCode;
+};
+
+export type FairnessEtaOutput = {
+  rows: Array<{
+    id: MemberId;
+    etaMin: number;
+  }>;
+  transportMode: TransportMode;
+  source: "heuristic" | "mapbox";
+  providerLabel: string;
+  note: string | null;
+  cacheStatus: "hit" | "miss" | "stale";
 };
 
 export type CastVoteInput = {

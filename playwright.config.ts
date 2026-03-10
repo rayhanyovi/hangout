@@ -39,6 +39,8 @@ export default defineConfig({
         ".tmp",
         "playwright-room-store",
       ),
+      HANGOUT_ROUTING_PROVIDER: "mapbox",
+      HANGOUT_USE_FIXTURE_ROUTING: "true",
       HANGOUT_USE_FIXTURE_VENUES: "true",
       NEXT_TELEMETRY_DISABLED: "1",
     },

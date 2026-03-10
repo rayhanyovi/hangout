@@ -26,6 +26,7 @@ This file records the current Vercel deployment posture for the root Next.js app
 
 - Set `DATABASE_URL` in Vercel project environment variables for any shared preview or production deployment
 - Set `CRON_SECRET` in Vercel project environment variables so scheduled cleanup requests are authenticated
+- Set `HANGOUT_ROUTING_PROVIDER=mapbox` and `MAPBOX_ACCESS_TOKEN` if you want deployed rooms to use provider-backed route durations instead of the heuristic ETA fallback
 - Run `npm run db:migrate` before first traffic so versioned SQL migrations are applied in order
 - If `DATABASE_URL` is omitted, the app falls back to a temporary runtime file store; that fallback is acceptable for local development but not for durable Vercel environments
 

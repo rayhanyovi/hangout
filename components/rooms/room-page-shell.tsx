@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
 import {
+  type FairnessEtaOutput,
   getRoomDecisionRoute,
   getRoomRoute,
   VENUE_CATEGORIES,
@@ -13,12 +14,12 @@ import {
   type VenueCategory,
 } from "@/lib/contracts";
 import {
+  applyFairnessEta,
   buildDraftRoomMembers,
   buildMidpointFairnessSummary,
   createPendingDraftRoomMember,
   mapSnapshotMembersToDraftMembers,
   memberHasLocation,
-  TRANSPORT_ETA_PROFILES,
   type DraftRoomMember,
   type DraftRoomSeed,
   type RankedVenue,
@@ -53,6 +54,10 @@ type RoomUpdateResponse = {
 
 type VoteMutationResponse = {
   snapshot: RoomSnapshot;
+  message?: string;
+};
+
+type FairnessEtaResponse = FairnessEtaOutput & {
   message?: string;
 };
 
@@ -95,6 +100,8 @@ export function RoomPageShell({
   const [voteError, setVoteError] = useState<string | null>(null);
   const [isVoteSubmitting, setIsVoteSubmitting] = useState(false);
   const [venueStatus, setVenueStatus] = useState<AsyncStatus>("idle");
+  const [fairnessEta, setFairnessEta] = useState<FairnessEtaResponse | null>(null);
+  const [fairnessEtaStatus, setFairnessEtaStatus] = useState<AsyncStatus>("idle");
 
   const mappedMembers = useMemo(
     () =>
@@ -110,9 +117,18 @@ export function RoomPageShell({
     () => buildMidpointFairnessSummary(mappedMembers, draftSeed.transportMode),
     [mappedMembers, draftSeed.transportMode],
   );
-  const fairnessTransportProfile = TRANSPORT_ETA_PROFILES[draftSeed.transportMode];
-  const maxEtaMin = Math.max(...fairnessSummary.rows.map((row) => row.etaMin), 1);
-  const midpoint = fairnessSummary.midpoint;
+  const displayedFairnessSummary = useMemo(
+    () =>
+      fairnessEta
+        ? applyFairnessEta(fairnessSummary, fairnessEta)
+        : fairnessSummary,
+    [fairnessEta, fairnessSummary],
+  );
+  const maxEtaMin = Math.max(
+    ...displayedFairnessSummary.rows.map((row) => row.etaMin),
+    1,
+  );
+  const midpoint = displayedFairnessSummary.midpoint;
   const midpointLat = midpoint?.lat ?? null;
   const midpointLng = midpoint?.lng ?? null;
   const requestedVenueCategories = useMemo<VenueCategory[]>(
@@ -449,6 +465,76 @@ export function RoomPageShell({
       window.clearInterval(interval);
     };
   }, [isLiveRoom, joinCode]);
+
+  useEffect(() => {
+    if (mappedMembers.length < 2 || midpointLat === null || midpointLng === null) {
+      setFairnessEta(null);
+      setFairnessEtaStatus("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timeoutId = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, ROOM_ACTION_TIMEOUT_MS);
+
+    setFairnessEtaStatus("loading");
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/routing/eta", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            midpoint: {
+              lat: midpointLat,
+              lng: midpointLng,
+            },
+            members: mappedMembers,
+            transportMode: draftSeed.transportMode,
+            joinCode: joinCode.toUpperCase(),
+          }),
+        });
+        const payload = (await response.json()) as FairnessEtaResponse;
+
+        if (!response.ok) {
+          throw new Error(payload.message ?? "Fairness ETA refresh failed.");
+        }
+
+        setFairnessEta(payload);
+        setFairnessEtaStatus("success");
+      } catch {
+        if (controller.signal.aborted) {
+          if (didTimeout) {
+            setFairnessEtaStatus("timeout");
+          }
+          return;
+        }
+
+        setFairnessEta(null);
+        setFairnessEtaStatus("error");
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    midpointLat,
+    midpointLng,
+    mappedMembers,
+    draftSeed.transportMode,
+    joinCode,
+  ]);
 
   useEffect(() => {
     if (mappedMembers.length < 2 || midpointLat === null || midpointLng === null) {
@@ -796,7 +882,7 @@ export function RoomPageShell({
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
                   Fairness shell
                 </p>
-                {fairnessSummary.rows.length > 0 ? (
+                {displayedFairnessSummary.rows.length > 0 ? (
                   <>
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
@@ -812,7 +898,7 @@ export function RoomPageShell({
                           Average ETA
                         </p>
                         <p className="mt-2 text-sm font-semibold text-foreground">
-                          {fairnessSummary.averageEtaMin?.toFixed(1)} min
+                          {displayedFairnessSummary.averageEtaMin?.toFixed(1)} min
                         </p>
                       </div>
                       <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
@@ -820,25 +906,29 @@ export function RoomPageShell({
                           ETA spread
                         </p>
                         <p className="mt-2 text-sm font-semibold text-foreground">
-                          {fairnessSummary.spreadEtaMin?.toFixed(1)} min
+                          {displayedFairnessSummary.spreadEtaMin?.toFixed(1)} min
                         </p>
                       </div>
                     </div>
 
                     <p className="mt-4 text-xs leading-6 text-muted">
-                      ETA lens uses the{" "}
+                      ETA lens uses{" "}
                       <span className="font-semibold text-foreground">
-                        {fairnessTransportProfile.label}
+                        {displayedFairnessSummary.etaProviderLabel}
                       </span>{" "}
-                      heuristic for{" "}
+                      for{" "}
                       <span className="font-semibold capitalize text-foreground">
                         {draftSeed.transportMode}
                       </span>
-                      . It is transport-aware, but not live traffic routing yet.
+                      .{" "}
+                      {displayedFairnessSummary.etaNote ?? "Route-duration details are currently unavailable."}
+                      {fairnessEtaStatus === "loading"
+                        ? " Refreshing route durations from the server."
+                        : ""}
                     </p>
 
                     <div className="mt-5 space-y-3">
-                      {fairnessSummary.rows.map((row) => (
+                      {displayedFairnessSummary.rows.map((row) => (
                         <div key={row.id}>
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-foreground">{row.name}</span>

@@ -62,3 +62,18 @@ export const searchVenuesSchema = z.object({
   budget: z.enum(["low", "mid", "high"]).optional(),
   limit: z.number().int().min(1).max(12).default(8),
 });
+
+export const fairnessEtaSchema = z.object({
+  midpoint: coordinateSchema,
+  members: z
+    .array(
+      coordinateSchema.extend({
+        id: identifierSchema,
+        name: z.string().trim().min(1).max(40),
+      }),
+    )
+    .min(2)
+    .max(16),
+  transportMode: z.enum(TRANSPORT_MODES),
+  joinCode: z.string().trim().min(4).max(12).optional(),
+});

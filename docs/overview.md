@@ -25,7 +25,7 @@ This repository now has one active application state:
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Local browser-level smoke coverage now exists for the create, join, location share, vote, finalize, and decision flow via Playwright
 - Member location input now supports pin-on-map selection in addition to GPS capture and raw coordinate entry
-- Fairness shell now includes a transport-aware heuristic ETA lens based on the room transport mode, even though live routing is still not integrated
+- Fairness shell now upgrades from heuristic ETA to provider-backed route durations when Mapbox routing env is configured, with heuristic fallback kept for local/offline or unsupported modes
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
@@ -98,8 +98,8 @@ Prototype architecture during the audit:
 
 Important product requirements that are still missing:
 
-- Provider-backed routing and live traffic ETA; fairness now has a heuristic ETA lens but not real route durations yet
-- Address search beyond raw latitude and longitude input
+- Full routing-provider rollout in deployed environments; provider support now exists in code, but live environment setup and smoke verification are still pending
+- Optional geocoded address search UX; pin-on-map input already exists, but text-address lookup is not implemented yet
 - Environment hardening, deployment assumptions, and final Vercel rollout sign-off
 
 In short: the root app now holds the MVP-complete implementation path, while the old prototype remains only as documented history.
@@ -134,6 +134,7 @@ Recommended target shape for the production app:
 - Schema evolution: versioned SQL migrations under `db/migrations/`, with `db/schema.sql` as the latest reference snapshot
 - Expiry handling: room rows carry `expires_at`, with request-driven pruning plus a 15-minute authenticated cron cleanup route
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
+- Fairness ETA boundary: server-only Mapbox Matrix adapter with runtime cache, stale fallback, and heuristic fallback when provider config is absent or unsupported
 - Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
 - Realtime strategy: 4-second polling for MVP, with explicit refresh events and a later upgrade path to realtime transport
 

@@ -97,6 +97,7 @@ test("core room flow works across create, join, vote, and finalize", async ({
 
   await expect(hostPage.getByTestId("venue-card-kopi-tengah")).toBeVisible();
   await expect(memberPage.getByTestId("venue-card-kopi-tengah")).toBeVisible();
+  await expect(hostPage.getByText("Mapbox Matrix driving proxy")).toBeVisible();
 
   await Promise.all([
     memberPage.waitForResponse(

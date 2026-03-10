@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildMidpointFairnessSummary, estimateTravelMinutes } from "@/lib/rooms";
+import {
+  applyFairnessEta,
+  buildMidpointFairnessSummary,
+  estimateTravelMinutes,
+} from "@/lib/rooms";
 
 describe("buildMidpointFairnessSummary", () => {
   it("computes midpoint and fairness metrics for multiple members", () => {
@@ -20,6 +24,7 @@ describe("buildMidpointFairnessSummary", () => {
     expect(summary.spreadKm).toBe(0);
     expect(summary.spreadEtaMin).toBe(0);
     expect(summary.transportMode).toBe("motor");
+    expect(summary.etaSource).toBe("heuristic");
   });
 
   it("returns an empty summary when fewer than two members are located", () => {
@@ -42,5 +47,30 @@ describe("buildMidpointFairnessSummary", () => {
     expect(estimateTravelMinutes(3, "transit")).toBeGreaterThan(
       estimateTravelMinutes(3, "motor"),
     );
+  });
+
+  it("can replace heuristic ETA rows with provider-backed durations", () => {
+    const summary = buildMidpointFairnessSummary(
+      [
+        { id: "a", name: "A", lat: -6.2, lng: 106.8 },
+        { id: "b", name: "B", lat: -6.2, lng: 106.84 },
+      ],
+      "car",
+    );
+    const enriched = applyFairnessEta(summary, {
+      rows: [
+        { id: "a", etaMin: 14.2 },
+        { id: "b", etaMin: 18.8 },
+      ],
+      source: "mapbox",
+      providerLabel: "Mapbox Matrix driving-traffic",
+      note: "Route durations are fetched from Mapbox Matrix.",
+    });
+
+    expect(enriched.rows.map((row) => row.etaMin)).toEqual([14.2, 18.8]);
+    expect(enriched.averageEtaMin).toBe(16.5);
+    expect(enriched.spreadEtaMin).toBeCloseTo(4.6);
+    expect(enriched.etaSource).toBe("mapbox");
+    expect(enriched.etaProviderLabel).toBe("Mapbox Matrix driving-traffic");
   });
 });
