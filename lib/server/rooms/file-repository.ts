@@ -123,7 +123,10 @@ function buildSnapshot(store: RoomStoreFile, room: Room): RoomSnapshot {
   };
 }
 
-function computePersistedMidpoint(members: Member[]): Midpoint | null {
+function computePersistedMidpoint(
+  members: Member[],
+  transportMode: Room["transportMode"],
+): Midpoint | null {
   const locatedMembers = members
     .filter((member): member is Member & { location: MemberLocation } => member.location !== null)
     .map((member) => ({
@@ -133,7 +136,10 @@ function computePersistedMidpoint(members: Member[]): Midpoint | null {
       lng: member.location.lng,
     }));
 
-  const fairnessSummary = buildMidpointFairnessSummary(locatedMembers);
+  const fairnessSummary = buildMidpointFairnessSummary(
+    locatedMembers,
+    transportMode,
+  );
 
   if (!fairnessSummary.midpoint) {
     return null;
@@ -146,6 +152,7 @@ function computePersistedMidpoint(members: Member[]): Midpoint | null {
     fairness: fairnessSummary.rows.map((row) => ({
       memberId: row.id,
       distanceKm: row.distanceKm,
+      etaMin: row.etaMin,
     })),
   };
 }
@@ -343,7 +350,7 @@ export async function updateMemberLocation(
       : member,
   );
   const roomMembers = nextMembers.filter((member) => member.roomId === room.roomId);
-  const midpoint = computePersistedMidpoint(roomMembers);
+  const midpoint = computePersistedMidpoint(roomMembers, room.transportMode);
   const nextRooms = store.rooms.map((candidate) =>
     candidate.roomId === room.roomId
       ? {

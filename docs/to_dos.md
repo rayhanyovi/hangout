@@ -82,4 +82,5 @@ Checklist convention:
 - [x] Add scheduled TTL cleanup for expired rooms outside the current request-driven pruning path
 - [x] Add end-to-end smoke coverage for the core room flow
 - [x] Add address search or pin-on-map location input beyond raw coordinates
-- [ ] Evaluate transport-aware fairness or ETA-based scoring as the next product upgrade
+- [x] Evaluate transport-aware fairness or ETA-based scoring as the next product upgrade
+- [ ] Replace the heuristic ETA lens with provider-backed route durations when routing infrastructure is ready

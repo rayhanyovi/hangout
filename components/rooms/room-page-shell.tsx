@@ -18,6 +18,7 @@ import {
   createPendingDraftRoomMember,
   mapSnapshotMembersToDraftMembers,
   memberHasLocation,
+  TRANSPORT_ETA_PROFILES,
   type DraftRoomMember,
   type DraftRoomSeed,
   type RankedVenue,
@@ -106,9 +107,11 @@ export function RoomPageShell({
     [members],
   );
   const fairnessSummary = useMemo(
-    () => buildMidpointFairnessSummary(mappedMembers),
-    [mappedMembers],
+    () => buildMidpointFairnessSummary(mappedMembers, draftSeed.transportMode),
+    [mappedMembers, draftSeed.transportMode],
   );
+  const fairnessTransportProfile = TRANSPORT_ETA_PROFILES[draftSeed.transportMode];
+  const maxEtaMin = Math.max(...fairnessSummary.rows.map((row) => row.etaMin), 1);
   const midpoint = fairnessSummary.midpoint;
   const midpointLat = midpoint?.lat ?? null;
   const midpointLng = midpoint?.lng ?? null;
@@ -806,33 +809,47 @@ export function RoomPageShell({
                       </div>
                       <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                          Average detour
+                          Average ETA
                         </p>
                         <p className="mt-2 text-sm font-semibold text-foreground">
-                          {fairnessSummary.averageDistanceKm?.toFixed(1)} km
+                          {fairnessSummary.averageEtaMin?.toFixed(1)} min
                         </p>
                       </div>
                       <div className="rounded-[1.2rem] border border-line bg-white/78 p-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                          Distance spread
+                          ETA spread
                         </p>
                         <p className="mt-2 text-sm font-semibold text-foreground">
-                          {fairnessSummary.spreadKm?.toFixed(1)} km
+                          {fairnessSummary.spreadEtaMin?.toFixed(1)} min
                         </p>
                       </div>
                     </div>
+
+                    <p className="mt-4 text-xs leading-6 text-muted">
+                      ETA lens uses the{" "}
+                      <span className="font-semibold text-foreground">
+                        {fairnessTransportProfile.label}
+                      </span>{" "}
+                      heuristic for{" "}
+                      <span className="font-semibold capitalize text-foreground">
+                        {draftSeed.transportMode}
+                      </span>
+                      . It is transport-aware, but not live traffic routing yet.
+                    </p>
 
                     <div className="mt-5 space-y-3">
                       {fairnessSummary.rows.map((row) => (
                         <div key={row.id}>
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-foreground">{row.name}</span>
-                            <span className="text-muted">{row.distanceKm.toFixed(1)} km</span>
+                            <span className="text-muted">
+                              {row.etaMin.toFixed(1)} min · {row.distanceKm.toFixed(1)} km
+                            </span>
                           </div>
                           <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/90">
                             <div
                               className="h-full rounded-full bg-teal"
-                              style={{ width: `${Math.min(100, (row.distanceKm / 12) * 100)}%` }}
+                              style={{ width: `${Math.min(100, (row.etaMin / maxEtaMin) * 100)}%` }}
                             />
                           </div>
                         </div>
