@@ -127,6 +127,7 @@ Recommended target shape for the production app:
 - Expiry handling: room rows carry `expires_at`, with scheduled cleanup every 15 minutes
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
 - Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
+- Realtime strategy: 4-second polling for MVP, with explicit refresh events and a later upgrade path to realtime transport
 
 ## Working Assumption For Future Tasks
 

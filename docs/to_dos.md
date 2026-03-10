@@ -33,7 +33,7 @@ Checklist convention:
 - [x] Design server APIs or server actions for room create/join/update flows
 - [x] Design the venue search server boundary, including caching and provider failure handling
 - [x] Define how midpoint computation will be triggered and stored
-- [ ] Define realtime strategy for MVP: polling or realtime provider
+- [x] Define realtime strategy for MVP: polling or realtime provider
 
 ## App Foundation
 
