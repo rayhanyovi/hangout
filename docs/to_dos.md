@@ -58,7 +58,7 @@ Checklist convention:
 ## Production Readiness
 
 - [x] Add loading, empty, timeout, and provider-error states across core flows
-- [ ] Add rate limiting and caching around venue search
+- [x] Add rate limiting and caching around venue search
 - [ ] Add analytics and operational logging for key room events
 - [ ] Add environment variable documentation and example config
 - [ ] Validate mobile usability and responsive behavior

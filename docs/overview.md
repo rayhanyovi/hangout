@@ -19,8 +19,10 @@ This repository currently contains two separate app states:
 - Root app: a Next.js 16 App Router shell in `/app` with Hangout branding applied
 - Reference app: a Lovable export in `/my-idea-app` built with Vite + React + TypeScript
 - Root TypeScript and ESLint validation are now scoped to the production app, not the Lovable reference folder
-
-The root Next.js app now has branded metadata, styling tokens, and a landing shell, but core product flows are not yet implemented. The Lovable export still contains the only real product prototype today.
+- The root Next.js app now covers the active MVP path: create room, join room, share location, compute midpoint and fairness, retrieve venue candidates, vote, finalize, and render a decision summary
+- Room persistence is still backed by a temporary JSON store in the OS temp directory; PostgreSQL remains the intended production persistence target
+- Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
+- The Lovable export is now reference-only for parity review and migration checks, not the primary working app
 
 ## Root App Structure
 
@@ -87,15 +89,12 @@ Current architecture in the Lovable export:
 
 Important product requirements that are still missing:
 
-- Real room lifecycle: create, join, host/member role, unique join code
-- Shared room state across users
-- Voting system and venue finalization
-- Privacy mode and data retention policy
-- Transport mode handling
-- Address search / pin-on-map input flow
-- Backend API and persistence layer
-- Realtime or polling synchronization
-- Production-grade observability, rate limiting, and error handling
+- Durable production persistence with PostgreSQL, migrations, and TTL cleanup outside the temporary file store
+- Transport-aware routing or ETA-based fairness; current fairness still uses geometric distance only
+- Address search / pin-on-map flow beyond raw latitude and longitude input
+- Production-grade observability, analytics, and operational logging
+- Environment hardening, deployment assumptions, and final Vercel rollout work
+- Final parity review and removal of `/my-idea-app` after cutover confidence is high
 
 In short: `my-idea-app` is a useful interaction prototype, not an MVP-complete production app.
 
