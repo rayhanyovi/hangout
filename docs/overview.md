@@ -126,6 +126,7 @@ Recommended target shape for the production app:
 - Persistence access: server-only repository layer
 - Expiry handling: room rows carry `expires_at`, with scheduled cleanup every 15 minutes
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
+- Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
 
 ## Working Assumption For Future Tasks
 
