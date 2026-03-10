@@ -5,16 +5,16 @@
 - `docs/overview.md` is the technical and product map of the project.
 - `docs/to_dos.md` is the main progress tracker.
 - `docs/workflow_contract.md` is the canonical workflow contract for AI agents and developers.
+- `docs/parity_review.md` records the final prototype-vs-root cutover review.
 - `docs/environment.md` documents runtime and deployment-facing environment variables.
 - `docs/vercel_deployment.md` documents Vercel-specific deployment assumptions and checked-in runtime config.
 
 ## Core Agreement
 
 - We are building the real application in the root Next.js project.
-- `/my-idea-app` is reference material from Lovable, not the production app.
 - `npm` is the canonical package manager for the root app and `package-lock.json` is the lockfile of record.
 - New product work should be implemented in the root app unless a task explicitly says otherwise.
-- `/my-idea-app` can be read, compared, and mined for logic or UI ideas, but it should not become the place where production readiness work accumulates.
+- Historical prototype context now lives in `docs/parity_review.md` and git history, not in a second live app directory.
 
 ## Working Order Per Task
 
@@ -22,7 +22,7 @@ For any non-trivial task, follow this order:
 
 1. Read the relevant parts of `docs/overview.md`.
 2. Check `docs/to_dos.md` and pick the matching task line.
-3. Inspect `/my-idea-app` only if reference behavior or UI parity is needed.
+3. Check `docs/parity_review.md` if historical prototype behavior matters.
 4. Implement in the root Next.js app.
 5. Verify with the smallest meaningful validation step.
 6. Update `docs/to_dos.md` if the task is truly finished.
@@ -30,9 +30,8 @@ For any non-trivial task, follow this order:
 
 ## Repo Boundary Rules
 
-- Do not add new product features only inside `/my-idea-app`.
-- Do not treat root build or lint results as trustworthy if tooling still scans `/my-idea-app`.
-- If logic is copied from the Lovable export, normalize it to Next.js App Router, server/client boundaries, and production constraints.
+- Do not reintroduce a second app workspace for prototype-only product development.
+- If logic is brought forward from historical prototype work, normalize it to Next.js App Router, server/client boundaries, and production constraints.
 - Keep browser-only code isolated behind explicit client components.
 - Move provider calls that need control, caching, or protection behind server boundaries where appropriate.
 

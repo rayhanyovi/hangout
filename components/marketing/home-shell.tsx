@@ -45,9 +45,9 @@ const stateCards = [
   },
   {
     title: "Cutover blockers",
-    status: "Still open",
+    status: "Next up",
     copy:
-      "Durable persistence, parity clean-up, dan final Vercel rollout masih jadi langkah terakhir sebelum app ini bisa dianggap benar-benar production-ready.",
+      "Runtime deploy, database provisioning, dan final Vercel rollout sekarang jadi langkah operasional terakhir sebelum go-live.",
   },
 ];
 
@@ -264,9 +264,8 @@ export function HomeShell() {
               Room planner ini sudah jadi produk kerja, bukan shell migrasi.
             </h2>
             <p className="mt-4 max-w-lg text-sm leading-7 text-background/75">
-              Root app sekarang memegang flow utama Hangout end-to-end. Prototype
-              Lovable masih berguna sebagai bahan parity review, tapi bukan lagi
-              tempat development utama.
+              Root app sekarang memegang flow utama Hangout end-to-end dan jadi
+              satu-satunya codebase aktif untuk development Hangout.
             </p>
           </div>
 

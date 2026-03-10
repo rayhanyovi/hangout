@@ -14,11 +14,9 @@ The core product promise is simple: reduce location debate, make the tradeoff tr
 
 ## Current Repo State
 
-This repository currently contains two separate app states:
+This repository now has one active application state:
 
-- Root app: a Next.js 16 App Router shell in `/app` with Hangout branding applied
-- Reference app: a Lovable export in `/my-idea-app` built with Vite + React + TypeScript
-- Root TypeScript and ESLint validation are now scoped to the production app, not the Lovable reference folder
+- Root app: a Next.js 16 App Router app in `/app` with Hangout branding, routes, APIs, and production-oriented boundaries
 - The root Next.js app now covers the active MVP path: create room, join room, share location, compute midpoint and fairness, retrieve venue candidates, vote, finalize, and render a decision summary
 - Room persistence now supports durable PostgreSQL storage when `DATABASE_URL` is configured, with the temporary JSON store kept only as a local fallback
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
@@ -26,7 +24,7 @@ This repository currently contains two separate app states:
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
-- The Lovable export is now reference-only for parity review and migration checks, not the primary working app
+- The historical Lovable prototype has been cut over and removed from the working tree; parity context is retained in `docs/parity_review.md`
 
 ## Root App Structure
 
@@ -67,9 +65,9 @@ The root app now has a first stable domain contract layer in `lib/contracts/` co
 
 These contracts are intended to stay stable while UI and server implementation iterate around them.
 
-## What Exists In `my-idea-app`
+## Historical Prototype Snapshot
 
-Implemented prototype capabilities:
+The removed Lovable prototype provided these capabilities during the audit and migration phase:
 
 - Add/remove members locally
 - Capture member location via browser geolocation
@@ -81,7 +79,7 @@ Implemented prototype capabilities:
 - Show members, midpoint, search radius, and venues on a Leaflet map
 - Copy a hardcoded room-style URL to clipboard
 
-Current architecture in the Lovable export:
+Prototype architecture during the audit:
 
 - Single-page client app
 - React Router routes `/` and `/room/:roomId`, both rendering the same page
@@ -99,9 +97,8 @@ Important product requirements that are still missing:
 - Address search / pin-on-map flow beyond raw latitude and longitude input
 - Automated database migrations and scheduled TTL cleanup beyond the current request-driven expiry pruning
 - Environment hardening, deployment assumptions, and final Vercel rollout sign-off
-- Final parity review and removal of `/my-idea-app` after cutover confidence is high
 
-In short: `my-idea-app` is still useful reference material, but the root app now holds the MVP-complete implementation path.
+In short: the root app now holds the MVP-complete implementation path, while the old prototype remains only as documented history.
 
 ## Audit Findings
 
@@ -121,7 +118,6 @@ High-signal findings from the audit:
 Recommended target shape for the production app:
 
 - Root Next.js App Router app becomes the only active application
-- `my-idea-app` remains read-only reference until parity is complete
 - Shared contracts live in root and drive both server and client code
 - Venue search moves behind a server boundary
 - Room state, member state, midpoint state, and voting state become explicit persisted entities
@@ -138,4 +134,4 @@ Recommended target shape for the production app:
 
 ## Working Assumption For Future Tasks
 
-Treat `/my-idea-app` as a design and logic reference, not as code to harden in place. The main job is to rebuild the product properly in the root Next.js app, using the prototype only where it meaningfully accelerates parity.
+Treat the root Next.js app as the only live implementation. If historical prototype behavior matters, use `docs/parity_review.md`, the PRD/BRD text, and git history rather than rebuilding a second app boundary.

@@ -18,6 +18,5 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "lib/**/*.test.tsx",
     ],
-    exclude: ["my-idea-app/**"],
   },
 });

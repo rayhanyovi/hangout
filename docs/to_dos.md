@@ -70,5 +70,5 @@ Checklist convention:
 - [x] Remove obsolete starter assets and placeholder content from the root app
 - [x] Close the remaining live room parity gaps documented in `docs/parity_review.md`
 - [x] Replace the temporary room store with durable PostgreSQL persistence
-- [ ] Remove `/my-idea-app` after required parity is complete (blocked pending final cutover sign-off)
+- [x] Remove `/my-idea-app` after required parity is complete
 - [x] Re-run build, lint, and tests from the root app as release gates

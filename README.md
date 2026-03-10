@@ -32,5 +32,5 @@ Buka [http://localhost:3000](http://localhost:3000).
 ## Notes
 
 - Root app di repo ini adalah target production Next.js.
-- `my-idea-app/` adalah export Lovable yang dipakai sebagai reference sampai parity selesai.
+- Cutover dari prototype Lovable sudah selesai; repo ini sekarang hanya menyimpan app root yang aktif.
 - Jangan gunakan `yarn`, `pnpm`, atau `bun` untuk root app kecuali keputusan tooling diubah secara eksplisit.
