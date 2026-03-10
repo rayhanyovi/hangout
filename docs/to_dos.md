@@ -79,7 +79,7 @@ Checklist convention:
 - [ ] Configure Vercel project environment variables and execute the first durable preview deployment
 - [ ] Run deployed smoke tests for room create, join, vote, and finalize against the live database
 - [x] Add an automated database migration workflow so schema changes do not rely only on `db:push`
-- [ ] Add scheduled TTL cleanup for expired rooms outside the current request-driven pruning path
+- [x] Add scheduled TTL cleanup for expired rooms outside the current request-driven pruning path
 - [ ] Add end-to-end smoke coverage for the core room flow
 - [ ] Add address search or pin-on-map location input beyond raw coordinates
 - [ ] Evaluate transport-aware fairness or ETA-based scoring as the next product upgrade

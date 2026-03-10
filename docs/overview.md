@@ -20,6 +20,7 @@ This repository now has one active application state:
 - The root Next.js app now covers the active MVP path: create room, join room, share location, compute midpoint and fairness, retrieve venue candidates, vote, finalize, and render a decision summary
 - Room persistence now supports durable PostgreSQL storage when `DATABASE_URL` is configured, with the temporary JSON store kept only as a local fallback
 - PostgreSQL schema changes now have a versioned migration path in `db/migrations/`, with `db/schema.sql` kept as the latest consolidated snapshot
+- Expired room cleanup now has a dedicated authenticated cron route and Vercel schedule, not only request-driven pruning
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
@@ -96,7 +97,6 @@ Important product requirements that are still missing:
 
 - Transport-aware routing or ETA-based fairness; current fairness still uses geometric distance only
 - Address search / pin-on-map flow beyond raw latitude and longitude input
-- Scheduled TTL cleanup beyond the current request-driven expiry pruning
 - Environment hardening, deployment assumptions, and final Vercel rollout sign-off
 
 In short: the root app now holds the MVP-complete implementation path, while the old prototype remains only as documented history.
@@ -129,7 +129,7 @@ Recommended target shape for the production app:
 - Persistence layer: PostgreSQL as the system of record for rooms, members, votes, and venue cache metadata
 - Persistence access: server-only repository layer
 - Schema evolution: versioned SQL migrations under `db/migrations/`, with `db/schema.sql` as the latest reference snapshot
-- Expiry handling: room rows carry `expires_at`, with request-driven pruning today and room for scheduled cleanup later
+- Expiry handling: room rows carry `expires_at`, with request-driven pruning plus a 15-minute authenticated cron cleanup route
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
 - Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
 - Realtime strategy: 4-second polling for MVP, with explicit refresh events and a later upgrade path to realtime transport

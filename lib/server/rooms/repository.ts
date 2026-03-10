@@ -27,6 +27,10 @@ export async function createRoom(
   return getRepository().createRoom(input, origin);
 }
 
+export async function cleanupExpiredRooms() {
+  return getRepository().cleanupExpiredRooms();
+}
+
 export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
   return getRepository().joinRoom(input);
 }

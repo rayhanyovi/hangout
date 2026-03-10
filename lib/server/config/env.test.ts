@@ -15,6 +15,7 @@ describe("parseServerEnv", () => {
     const env = parseServerEnv({
       NODE_ENV: "production",
       DATABASE_URL: "postgresql://hangout:secret@localhost:5432/hangout",
+      CRON_SECRET: "1234567890abcdef",
       HANGOUT_ENABLE_STRUCTURED_LOGS: "false",
       HANGOUT_ROOM_STORE_DIR: "/tmp/hangout-prod",
       HANGOUT_VENUE_CACHE_TTL_SECONDS: "180",
@@ -27,6 +28,7 @@ describe("parseServerEnv", () => {
     expect(env.DATABASE_URL).toBe(
       "postgresql://hangout:secret@localhost:5432/hangout",
     );
+    expect(env.CRON_SECRET).toBe("1234567890abcdef");
     expect(env.HANGOUT_ENABLE_STRUCTURED_LOGS).toBe(false);
     expect(env.HANGOUT_ROOM_STORE_DIR).toBe("/tmp/hangout-prod");
     expect(env.HANGOUT_VENUE_CACHE_TTL_SECONDS).toBe(180);

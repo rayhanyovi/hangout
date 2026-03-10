@@ -2,7 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm ci",
+  "crons": [
+    {
+      "path": "/api/cron/prune-expired-rooms",
+      "schedule": "*/15 * * * *"
+    }
+  ],
   "functions": {
+    "app/api/cron/**/*.ts": {
+      "maxDuration": 10
+    },
     "app/api/rooms/**/*.ts": {
       "maxDuration": 10
     },

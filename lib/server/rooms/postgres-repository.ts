@@ -26,7 +26,10 @@ import {
 import { LOCATION_RETENTION_POLICY } from "@/lib/contracts/privacy";
 import { buildMidpointFairnessSummary } from "@/lib/rooms";
 import { getPostgresPool } from "@/lib/server/db/client";
-import { trackAnalyticsEvent } from "@/lib/server/observability/logger";
+import {
+  logOperationalEvent,
+  trackAnalyticsEvent,
+} from "@/lib/server/observability/logger";
 
 const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const JOIN_CODE_UNIQUE_CONSTRAINT = "rooms_join_code_key";
@@ -200,7 +203,9 @@ function mapVote(row: VoteRow): Vote {
 }
 
 async function pruneExpiredRooms(client: PoolClient) {
-  await client.query("delete from rooms where expires_at <= now()");
+  const result = await client.query("delete from rooms where expires_at <= now()");
+
+  return result.rowCount ?? 0;
 }
 
 async function fetchRoomRowByJoinCode(client: PoolClient, joinCode: string) {
@@ -419,6 +424,31 @@ export async function createRoom(
   }
 
   throw new Error("Failed to generate a unique join code.");
+}
+
+export async function cleanupExpiredRooms() {
+  const pool = getPostgresPool();
+  const client = await pool.connect();
+
+  try {
+    const prunedRoomCount = await pruneExpiredRooms(client);
+
+    logOperationalEvent(
+      "room_cleanup_completed",
+      {
+        prunedRoomCount,
+        storageBackend: "postgres",
+      },
+      "info",
+    );
+
+    return {
+      prunedRoomCount,
+      storageBackend: "postgres" as const,
+    };
+  } finally {
+    client.release();
+  }
 }
 
 export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {

@@ -28,7 +28,10 @@ import {
 import { buildMidpointFairnessSummary } from "@/lib/rooms";
 import { LOCATION_RETENTION_POLICY } from "@/lib/contracts/privacy";
 import { serverEnv } from "@/lib/server/config/env";
-import { trackAnalyticsEvent } from "@/lib/server/observability/logger";
+import {
+  logOperationalEvent,
+  trackAnalyticsEvent,
+} from "@/lib/server/observability/logger";
 
 type RoomStoreFile = {
   rooms: Room[];
@@ -52,6 +55,11 @@ const EMPTY_ROOM_STORE: RoomStoreFile = {
 };
 const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+type PrunedRoomStore = {
+  prunedRoomCount: number;
+  store: RoomStoreFile;
+};
+
 async function ensureStoreFile() {
   await mkdir(ROOM_STORE_DIRECTORY, { recursive: true });
 
@@ -62,18 +70,24 @@ async function ensureStoreFile() {
   }
 }
 
-async function readStore() {
+async function readRawStore() {
   await ensureStoreFile();
 
   const contents = await readFile(ROOM_STORE_FILE, "utf8");
   const parsed = JSON.parse(contents) as Partial<RoomStoreFile>;
 
-  return pruneExpiredRooms({
+  return {
     rooms: parsed.rooms ?? [],
     members: parsed.members ?? [],
     votes: parsed.votes ?? [],
     venuesCache: parsed.venuesCache ?? [],
-  });
+  };
+}
+
+async function readStore() {
+  const rawStore = await readRawStore();
+
+  return pruneExpiredRooms(rawStore).store;
 }
 
 async function writeStore(store: RoomStoreFile) {
@@ -81,7 +95,7 @@ async function writeStore(store: RoomStoreFile) {
   await writeFile(ROOM_STORE_FILE, JSON.stringify(store, null, 2), "utf8");
 }
 
-function pruneExpiredRooms(store: RoomStoreFile) {
+function pruneExpiredRooms(store: RoomStoreFile): PrunedRoomStore {
   const now = Date.now();
   const activeRooms = store.rooms.filter(
     (room) => new Date(room.expiresAt).getTime() > now,
@@ -89,10 +103,13 @@ function pruneExpiredRooms(store: RoomStoreFile) {
   const activeRoomIds = new Set(activeRooms.map((room) => room.roomId));
 
   return {
-    rooms: activeRooms,
-    members: store.members.filter((member) => activeRoomIds.has(member.roomId)),
-    votes: store.votes.filter((vote) => activeRoomIds.has(vote.roomId)),
-    venuesCache: store.venuesCache.filter((cache) => activeRoomIds.has(cache.roomId)),
+    prunedRoomCount: store.rooms.length - activeRooms.length,
+    store: {
+      rooms: activeRooms,
+      members: store.members.filter((member) => activeRoomIds.has(member.roomId)),
+      votes: store.votes.filter((vote) => activeRoomIds.has(vote.roomId)),
+      venuesCache: store.venuesCache.filter((cache) => activeRoomIds.has(cache.roomId)),
+    },
   };
 }
 
@@ -223,6 +240,29 @@ export async function createRoom(
     room,
     hostMember: persistedHostMember,
     shareUrl: `${origin}${getRoomRoute(room.joinCode)}`,
+  };
+}
+
+export async function cleanupExpiredRooms() {
+  const rawStore = await readRawStore();
+  const { prunedRoomCount, store } = pruneExpiredRooms(rawStore);
+
+  if (prunedRoomCount > 0) {
+    await writeStore(store);
+  }
+
+  logOperationalEvent(
+    "room_cleanup_completed",
+    {
+      prunedRoomCount,
+      storageBackend: "file",
+    },
+    "info",
+  );
+
+  return {
+    prunedRoomCount,
+    storageBackend: "file" as const,
   };
 }
 
