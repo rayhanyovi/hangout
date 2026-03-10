@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
-import { type VenueCategory, getRoomDecisionRoute, getRoomRoute } from "@/lib/contracts";
+import {
+  getRoomDecisionRoute,
+  getRoomRoute,
+  type MemberLocation,
+  type VenueCategory,
+} from "@/lib/contracts";
 import {
   buildDraftRoomMembers,
   createPendingDraftRoomMember,
@@ -106,6 +111,26 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
     );
   };
 
+  const handleUpdateMemberLocation = (
+    memberId: string,
+    location: MemberLocation,
+  ) => {
+    setMembers((current) =>
+      current.map((member) =>
+        member.id === memberId
+          ? {
+              ...member,
+              location,
+              statusLabel:
+                location.source === "gps"
+                  ? "Shared from current device"
+                  : "Pinned manually in the room shell",
+            }
+          : member,
+      ),
+    );
+  };
+
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -204,8 +229,10 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
             <RoomMemberManager
               inviteLink={inviteLink}
               members={members}
+              privacyMode={draftSeed.privacyMode}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
+              onUpdateMemberLocation={handleUpdateMemberLocation}
             />
 
             <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
