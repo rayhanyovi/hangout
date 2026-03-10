@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary px-4 py-3 text-white!",
+        default: "bg-primary! px-4 py-3 text-white!",
         outline: "border border-line bg-card px-4 py-3 text-foreground",
         secondary: "bg-surface px-4 py-3 text-foreground",
         ghost: "bg-transparent px-3 py-2 text-foreground hover:bg-surface-soft",

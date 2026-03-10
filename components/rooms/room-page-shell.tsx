@@ -89,9 +89,9 @@ export function RoomPageShell({
   const [isVenueLoading, setIsVenueLoading] = useState(false);
   const [venueError, setVenueError] = useState<string | null>(null);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [selectedVenueCategories, setSelectedVenueCategories] = useState<string[]>(
-    () => draftSeed.categories,
-  );
+  const [selectedVenueCategories, setSelectedVenueCategories] = useState<
+    string[]
+  >(() => draftSeed.categories);
   const [searchRadiusM, setSearchRadiusM] = useState(draftSeed.radiusMDefault);
   const [roomTitle, setRoomTitle] = useState(draftSeed.title ?? "");
   const [roomDescription, setRoomDescription] = useState(
@@ -154,9 +154,8 @@ export function RoomPageShell({
   const midpointLng = midpoint?.lng ?? null;
   const activeVenueCategories = useMemo<VenueCategory[]>(
     () =>
-      selectedVenueCategories.filter(
-        (category): category is VenueCategory =>
-          VENUE_CATEGORIES.includes(category as VenueCategory),
+      selectedVenueCategories.filter((category): category is VenueCategory =>
+        VENUE_CATEGORIES.includes(category as VenueCategory),
       ),
     [selectedVenueCategories],
   );
@@ -765,7 +764,9 @@ export function RoomPageShell({
       const payload = (await response.json()) as RoomDetailsMutationResponse;
 
       if (!response.ok) {
-        throw new Error(payload.message ?? "Detail room belum berhasil disimpan.");
+        throw new Error(
+          payload.message ?? "Detail room belum berhasil disimpan.",
+        );
       }
 
       syncRoomSnapshotState(payload.snapshot);
@@ -825,7 +826,9 @@ export function RoomPageShell({
                 }}
                 className="absolute right-6 top-6"
                 aria-label={
-                  isEditingRoomDetails ? "Batal edit detail room" : "Edit detail room"
+                  isEditingRoomDetails
+                    ? "Batal edit detail room"
+                    : "Edit detail room"
                 }
               >
                 {isEditingRoomDetails ? (
@@ -839,7 +842,7 @@ export function RoomPageShell({
               {roomTitle.trim() || `Room ${joinCode}`}
             </h1>
             {isEditingRoomDetails ? (
-              <div className="mt-6 grid gap-3 rounded-3xl border border-line bg-surface p-4">
+              <div className="mt-6 grid gap-3 ">
                 <div className="space-y-2">
                   <label
                     htmlFor="room-description"
@@ -866,7 +869,9 @@ export function RoomPageShell({
                     id="room-scheduled-label"
                     type="date"
                     value={roomScheduledLabel}
-                    onChange={(event) => setRoomScheduledLabel(event.target.value)}
+                    onChange={(event) =>
+                      setRoomScheduledLabel(event.target.value)
+                    }
                   />
                   <p className="text-xs text-muted-foreground">
                     Kosongkan kalau masih tentative.
@@ -905,7 +910,7 @@ export function RoomPageShell({
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
                 Link undangan
               </p>
-              <p className="mt-3 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
+              <p className="mt-3 break-all rounded-xl bg-primary-soft px-3 py-2 font-mono text-xs text-foreground">
                 https://hangout.rayhan.id/room/{joinCode}
               </p>
               <div className="mt-4 flex flex-col gap-2">
@@ -913,6 +918,7 @@ export function RoomPageShell({
                   type="button"
                   onClick={() => void handleCopyInviteLink()}
                   variant="secondary"
+                  className="border! !border-primary! !text-primary"
                 >
                   {inviteCopied ? (
                     <Check className="h-4 w-4" />
@@ -925,38 +931,48 @@ export function RoomPageShell({
             </Card>
 
             <Card className="rounded-[2rem] p-5 shadow-sm">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-                Anggota
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+                  Anggota
+                </p>
+                <Button
+                  type="button"
+                  className="text-primary! font-bold!"
+                  variant="ghost"
+                  onClick={() => handleOpenMembersModal()}
+                >
+                  Lihat room
+                </Button>
+              </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
                 <Button
                   type="button"
                   onClick={() => handleOpenMembersModal()}
                   variant="secondary"
-                  className="h-auto justify-start rounded-2xl p-3 text-left"
+                  className="h-auto justify-start rounded-2xl p-3 text-left  bg-primary-soft border-primary border"
                 >
                   <span className="block">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary ">
                       Total anggota
                     </p>
-                    <p className="mt-2 text-lg font-semibold text-foreground">
+                    <p className="mt-2 text-lg font-semibold text-primary">
                       {members.length}
                     </p>
                   </span>
                 </Button>
-                <div className="rounded-2xl border border-line bg-surface p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="rounded-2xl border border-success bg-success-soft p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-success-foreground">
                     Sudah share
                   </p>
-                  <p className="mt-2 text-lg font-semibold text-foreground">
+                  <p className="mt-2 text-lg font-semibold text-success-foreground">
                     {sharedCount}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-line bg-surface p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="rounded-2xl border border-destructive bg-destructive/10 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-destructive">
                     Belum share
                   </p>
-                  <p className="mt-2 text-lg font-semibold text-foreground">
+                  <p className="mt-2 text-lg font-semibold text-destructive">
                     {pendingCount}
                   </p>
                 </div>
@@ -964,8 +980,8 @@ export function RoomPageShell({
               <Button
                 type="button"
                 onClick={() => handleOpenMembersModal(currentMemberId)}
-                variant="secondary"
-                className="mt-4 w-full"
+                variant="default"
+                className="mt-8 w-full"
               >
                 <Crosshair className="h-4 w-4" />
                 Masukkan lokasi saya
