@@ -30,6 +30,7 @@ The root production app now follows this baseline structure:
 - `components/marketing/` for reusable presentation components used by route shells
 - `lib/contracts/` for shared data contracts that can be used across client and server boundaries
 - `lib/server/` for server-only integrations and orchestration logic
+- `lib/math/`, `lib/venues/`, and `lib/validation/` for shared feature utilities
 - foundation packages for validation, map rendering, UI utilities, and testing are installed in the root app
 
 This is only the initial scaffold. Feature-specific folders will be added once route contracts and data contracts are frozen.

@@ -38,7 +38,7 @@ Checklist convention:
 ## App Foundation
 
 - [x] Install the required UI, map, validation, and testing dependencies in the root Next.js app
-- [ ] Set up shared utilities for math, venue mapping, and request validation
+- [x] Set up shared utilities for math, venue mapping, and request validation
 - [ ] Set up client-only map boundary for Leaflet within App Router
 - [ ] Set up testing baseline for unit and integration coverage in the root app
 
