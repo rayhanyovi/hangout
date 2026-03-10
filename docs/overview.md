@@ -48,6 +48,7 @@ This route map intentionally keeps the shared room flow on one stable room URL, 
 
 The root app now has a first stable domain contract layer in `lib/contracts/` covering:
 
+- request and response contracts for room create, join, snapshot, location update, midpoint compute, vote, and finalize flows
 - domain entities for room, member, location, midpoint, venue, vote, and finalized decision
 - route helpers for MVP URL generation
 - room state transitions for `open`, `finalized`, and `expired`
