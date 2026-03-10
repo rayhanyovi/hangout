@@ -53,3 +53,12 @@ export const finalizeRoomSchema = z.object({
   memberId: identifierSchema,
   venueId: identifierSchema,
 });
+
+export const searchVenuesSchema = z.object({
+  midpoint: coordinateSchema,
+  radiusM: z.number().int().positive().max(10000),
+  categories: z.array(z.enum(VENUE_CATEGORIES)).default([]),
+  tags: z.array(z.string().trim().min(1).max(24)).default([]),
+  budget: z.enum(["low", "mid", "high"]).optional(),
+  limit: z.number().int().min(1).max(12).default(8),
+});

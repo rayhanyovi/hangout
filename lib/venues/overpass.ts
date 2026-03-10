@@ -14,6 +14,10 @@ type OverpassElement = {
   tags?: OverpassTags;
 };
 
+type OverpassResponse = {
+  elements?: OverpassElement[];
+};
+
 const OVERPASS_CATEGORY_TAGS: Record<
   VenueCategory,
   {
@@ -136,4 +140,31 @@ export function normalizeOverpassVenue(
     ].filter((tag): tag is string => Boolean(tag)),
     mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
   };
+}
+
+export async function fetchOverpassVenues(
+  midpoint: Coordinate,
+  radiusM: number,
+  categories: VenueCategory[],
+) {
+  const query = buildOverpassQuery(midpoint, radiusM, categories);
+  const response = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=UTF-8",
+    },
+    body: query,
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Overpass search failed with status ${response.status}`);
+  }
+
+  const payload = (await response.json()) as OverpassResponse;
+  const elements = payload.elements ?? [];
+
+  return elements
+    .map((element) => normalizeOverpassVenue(element, midpoint))
+    .filter((venue): venue is Venue => venue !== null);
 }

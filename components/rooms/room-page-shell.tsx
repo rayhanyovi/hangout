@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
 import {
@@ -10,69 +10,41 @@ import {
   type VenueCategory,
 } from "@/lib/contracts";
 import {
-  buildMidpointFairnessSummary,
   buildDraftRoomMembers,
+  buildMidpointFairnessSummary,
   createPendingDraftRoomMember,
   memberHasLocation,
   type DraftRoomMember,
   type DraftRoomSeed,
+  type RankedVenue,
 } from "@/lib/rooms";
-import { haversineKm } from "@/lib/math";
 import { RoomMap } from "@/components/maps/room-map";
 import { RoomMemberManager } from "@/components/rooms/room-member-manager";
+import { VenueShortlist } from "@/components/rooms/venue-shortlist";
 
 type RoomPageShellProps = {
   joinCode: string;
   draftSeed: DraftRoomSeed;
 };
 
-const SAMPLE_VENUES: Record<
-  VenueCategory,
-  Array<{
-    id: string;
-    name: string;
-    lat: number;
-    lng: number;
-    tone: string;
-  }>
-> = {
-  cafe: [
-    { id: "kopi-tengah", name: "Kopi Tengah", lat: -6.1982, lng: 106.8331, tone: "Cafe" },
-    { id: "morning-press", name: "Morning Press", lat: -6.2011, lng: 106.8299, tone: "Cafe" },
-  ],
-  restaurant: [
-    { id: "garden-resto", name: "Green Garden Resto", lat: -6.2014, lng: 106.8362, tone: "Restaurant" },
-    { id: "warung-kita", name: "Warung Kita", lat: -6.1978, lng: 106.8386, tone: "Restaurant" },
-  ],
-  park: [
-    { id: "city-park", name: "City Park Pocket", lat: -6.2025, lng: 106.8315, tone: "Park" },
-    { id: "langsat", name: "Taman Langsat", lat: -6.2052, lng: 106.8358, tone: "Park" },
-  ],
-  mall: [
-    { id: "mall-central", name: "Central Mall", lat: -6.1966, lng: 106.8404, tone: "Mall" },
-    { id: "atrium-east", name: "Atrium East", lat: -6.2034, lng: 106.8268, tone: "Mall" },
-  ],
-  other: [
-    { id: "community-lab", name: "Community Lab", lat: -6.2007, lng: 106.8328, tone: "Other" },
-    { id: "weekend-hall", name: "Weekend Hall", lat: -6.2041, lng: 106.8372, tone: "Other" },
-  ],
+type VenueSearchResponse = {
+  venues: RankedVenue[];
+  message?: string;
 };
 
 const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
-
-function buildVenuePreview(draftSeed: DraftRoomSeed) {
-  const categories: VenueCategory[] =
-    draftSeed.categories.length > 0 ? draftSeed.categories : DEFAULT_PREVIEW_CATEGORIES;
-
-  return categories
-    .flatMap((category) => SAMPLE_VENUES[category])
-    .slice(0, 4);
-}
 
 export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
   const [members, setMembers] = useState<DraftRoomMember[]>(() =>
     buildDraftRoomMembers(draftSeed),
   );
+  const [venues, setVenues] = useState<RankedVenue[]>([]);
+  const [isVenueLoading, setIsVenueLoading] = useState(false);
+  const [venueError, setVenueError] = useState<string | null>(null);
+  const [activeVenueCategories, setActiveVenueCategories] = useState<
+    VenueCategory[]
+  >([]);
+
   const mappedMembers = useMemo(
     () =>
       members.filter(memberHasLocation).map((member) => ({
@@ -88,7 +60,27 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
     [mappedMembers],
   );
   const midpoint = fairnessSummary.midpoint;
-  const venues = buildVenuePreview(draftSeed);
+  const midpointLat = midpoint?.lat ?? null;
+  const midpointLng = midpoint?.lng ?? null;
+  const requestedVenueCategories = useMemo<VenueCategory[]>(
+    () =>
+      draftSeed.categories.length > 0
+        ? draftSeed.categories
+        : DEFAULT_PREVIEW_CATEGORIES,
+    [draftSeed.categories],
+  );
+  const requestedCategoryParam = requestedVenueCategories.join(",");
+  const requestedTagParam = draftSeed.tags.join(",");
+  const availableVenueFilters = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...requestedVenueCategories,
+          ...venues.map((venue) => venue.category),
+        ]),
+      ),
+    [requestedVenueCategories, venues],
+  );
 
   const inviteLink = getRoomRoute(joinCode);
 
@@ -121,6 +113,89 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
       ),
     );
   };
+
+  const handleToggleVenueCategory = (category: VenueCategory) => {
+    setActiveVenueCategories((current) => {
+      if (current.length === 0) {
+        return [category];
+      }
+
+      if (current.includes(category)) {
+        return current.filter((item) => item !== category);
+      }
+
+      return [...current, category];
+    });
+  };
+
+  useEffect(() => {
+    if (midpointLat === null || midpointLng === null) {
+      setVenues([]);
+      setIsVenueLoading(false);
+      setVenueError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      lat: String(midpointLat),
+      lng: String(midpointLng),
+      radiusM: String(draftSeed.radiusMDefault),
+      categories: requestedCategoryParam,
+      tags: requestedTagParam,
+      limit: "8",
+    });
+
+    if (draftSeed.budget) {
+      params.set("budget", draftSeed.budget);
+    }
+
+    setIsVenueLoading(true);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/venues/search?${params.toString()}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as VenueSearchResponse;
+
+        if (!response.ok) {
+          throw new Error(payload.message ?? "Venue provider request failed.");
+        }
+
+        setVenues(payload.venues);
+        setVenueError(null);
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setVenues([]);
+        setVenueError(
+          error instanceof Error
+            ? error.message
+            : "Venue provider request failed.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsVenueLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [
+    midpointLat,
+    midpointLng,
+    draftSeed.radiusMDefault,
+    draftSeed.budget,
+    requestedCategoryParam,
+    requestedTagParam,
+  ]);
 
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
@@ -231,10 +306,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                 Venue preferences
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {(draftSeed.categories.length > 0
-                  ? draftSeed.categories
-                  : DEFAULT_PREVIEW_CATEGORIES
-                ).map((category) => (
+                {requestedVenueCategories.map((category) => (
                   <span
                     key={category}
                     className="rounded-full border border-line bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground"
@@ -257,7 +329,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
               midpoint={midpoint}
               radiusM={draftSeed.radiusMDefault}
               venues={venues.map((venue) => ({
-                id: venue.id,
+                id: venue.venueId,
                 name: venue.name,
                 lat: venue.lat,
                 lng: venue.lng,
@@ -323,38 +395,15 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                 )}
               </article>
 
-              <article className="rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_45px_rgba(31,27,23,0.08)]">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                  Venue shortlist shell
-                </p>
-                <div className="mt-4 space-y-3">
-                  {venues.map((venue) => (
-                    <div
-                      key={venue.id}
-                      className="rounded-[1.3rem] border border-line bg-white/80 p-4"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {venue.name}
-                          </p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted">
-                            {venue.tone}
-                          </p>
-                        </div>
-                        {midpoint ? (
-                          <span className="text-xs font-medium text-muted">
-                            {Math.round(
-                              haversineKm(midpoint, { lat: venue.lat, lng: venue.lng }) * 1000,
-                            )}
-                            m
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </article>
+              <VenueShortlist
+                venues={venues}
+                activeCategories={activeVenueCategories}
+                onToggleCategory={handleToggleVenueCategory}
+                isLoading={isVenueLoading}
+                errorMessage={venueError}
+                categories={availableVenueFilters}
+                hasMidpoint={midpoint !== null}
+              />
             </div>
           </div>
         </section>
