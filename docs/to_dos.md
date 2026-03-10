@@ -18,7 +18,7 @@ Checklist convention:
 - [x] Isolate root Next.js tooling from `/my-idea-app` so root build/lint only validate the production app
 - [x] Decide the canonical package manager and lockfile strategy for the root app
 - [x] Replace the default Next.js starter page, metadata, and styling tokens with Project Hangout branding
-- [ ] Define the root folder structure for app routes, components, lib, server utilities, and shared contracts
+- [x] Define the root folder structure for app routes, components, lib, server utilities, and shared contracts
 
 ## Product Contracts
 

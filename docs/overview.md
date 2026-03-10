@@ -22,6 +22,17 @@ This repository currently contains two separate app states:
 
 The root Next.js app now has branded metadata, styling tokens, and a landing shell, but core product flows are not yet implemented. The Lovable export still contains the only real product prototype today.
 
+## Root App Structure
+
+The root production app now follows this baseline structure:
+
+- `app/` for route entries and layout boundaries
+- `components/marketing/` for reusable presentation components used by route shells
+- `lib/contracts/` for shared data contracts that can be used across client and server boundaries
+- `lib/server/` for server-only integrations and orchestration logic
+
+This is only the initial scaffold. Feature-specific folders will be added once route contracts and data contracts are frozen.
+
 ## What Exists In `my-idea-app`
 
 Implemented prototype capabilities:
