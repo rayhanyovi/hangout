@@ -28,6 +28,7 @@ The root production app now follows this baseline structure:
 
 - `app/` for route entries and layout boundaries
 - `components/marketing/` for reusable presentation components used by route shells
+- `components/maps/` for client-only Leaflet map boundaries used by App Router routes
 - `lib/contracts/` for shared data contracts that can be used across client and server boundaries
 - `lib/server/` for server-only integrations and orchestration logic
 - `lib/math/`, `lib/venues/`, and `lib/validation/` for shared feature utilities
