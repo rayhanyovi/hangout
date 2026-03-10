@@ -323,7 +323,11 @@ export function RoomMemberManager({
                         : ""}
                     </p>
                   ) : (
-                    <p className="mt-2 text-xs text-foreground">Lokasi belum dibagikan</p>
+                    <div className="mt-2">
+                      <Badge variant="destructive">
+                        Lokasi belum dibagikan
+                      </Badge>
+                    </div>
                   )}
                 </div>
 

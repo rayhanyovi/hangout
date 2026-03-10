@@ -3,14 +3,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "rounded-2xl border px-5 py-4 shadow-md",
+  "rounded-2xl border px-5 py-4 shadow-sm",
   {
     variants: {
       tone: {
-        info: "border-line bg-card text-foreground",
-        warning: "border-warning bg-warning-soft text-warning-foreground",
-        error: "border-destructive bg-destructive/10 text-destructive",
-        success: "border-success bg-success-soft text-success-foreground",
+        info: "border-primary/20 bg-primary/5 text-foreground",
+        warning:
+          "border-warning/35 bg-warning-soft text-warning-foreground",
+        error:
+          "border-destructive/35 bg-destructive/10 text-destructive",
+        success:
+          "border-success/35 bg-success-soft text-success-foreground",
       },
     },
     defaultVariants: {
@@ -28,7 +31,9 @@ function Alert({
 }
 
 function AlertTitle({ className, ...props }: React.ComponentProps<"p">) {
-  return <p className={cn("text-sm font-semibold", className)} {...props} />;
+  return (
+    <p className={cn("text-sm font-semibold tracking-[-0.02em]", className)} {...props} />
+  );
 }
 
 function AlertDescription({ className, ...props }: React.ComponentProps<"p">) {
