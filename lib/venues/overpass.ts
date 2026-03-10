@@ -18,6 +18,12 @@ type OverpassResponse = {
   elements?: OverpassElement[];
 };
 
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+] as const;
+
 const OVERPASS_CATEGORY_TAGS: Record<
   VenueCategory,
   {
@@ -26,7 +32,10 @@ const OVERPASS_CATEGORY_TAGS: Record<
   }
 > = {
   cafe: { amenity: ["cafe", "coffee_shop"], leisure: [] },
-  restaurant: { amenity: ["restaurant", "fast_food", "food_court"], leisure: [] },
+  restaurant: {
+    amenity: ["restaurant", "fast_food", "food_court"],
+    leisure: [],
+  },
   park: { amenity: [], leisure: ["park", "garden", "playground"] },
   mall: { amenity: ["mall", "marketplace"], leisure: [] },
   other: {
@@ -37,6 +46,20 @@ const OVERPASS_CATEGORY_TAGS: Record<
 
 function buildRegex(tags: string[]) {
   return tags.join("|");
+}
+
+function buildAroundQuery(
+  geometry: "node" | "way" | "relation",
+  key: "amenity" | "leisure",
+  regex: string,
+  midpoint: Coordinate,
+  radiusM: number,
+) {
+  return `${geometry}["${key}"~"${regex}"](around:${radiusM},${midpoint.lat},${midpoint.lng});`;
+}
+
+function buildOpenStreetMapUrl(lat: number, lng: number) {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
 }
 
 export function buildOverpassQuery(
@@ -60,21 +83,19 @@ export function buildOverpassQuery(
 
   if (amenityTags.length > 0) {
     const amenityRegex = buildRegex(amenityTags);
+    queryParts.push(buildAroundQuery("node", "amenity", amenityRegex, midpoint, radiusM));
+    queryParts.push(buildAroundQuery("way", "amenity", amenityRegex, midpoint, radiusM));
     queryParts.push(
-      `node["amenity"~"${amenityRegex}"](around:${radiusM},${midpoint.lat},${midpoint.lng});`,
-    );
-    queryParts.push(
-      `way["amenity"~"${amenityRegex}"](around:${radiusM},${midpoint.lat},${midpoint.lng});`,
+      buildAroundQuery("relation", "amenity", amenityRegex, midpoint, radiusM),
     );
   }
 
   if (leisureTags.length > 0) {
     const leisureRegex = buildRegex(leisureTags);
+    queryParts.push(buildAroundQuery("node", "leisure", leisureRegex, midpoint, radiusM));
+    queryParts.push(buildAroundQuery("way", "leisure", leisureRegex, midpoint, radiusM));
     queryParts.push(
-      `node["leisure"~"${leisureRegex}"](around:${radiusM},${midpoint.lat},${midpoint.lng});`,
-    );
-    queryParts.push(
-      `way["leisure"~"${leisureRegex}"](around:${radiusM},${midpoint.lat},${midpoint.lng});`,
+      buildAroundQuery("relation", "leisure", leisureRegex, midpoint, radiusM),
     );
   }
 
@@ -138,20 +159,19 @@ export function normalizeOverpassVenue(
       tags.outdoor_seating === "yes" ? "outdoor" : null,
       tags.smoking === "no" ? "no smoking" : null,
     ].filter((tag): tag is string => Boolean(tag)),
-    mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+    mapUrl: buildOpenStreetMapUrl(lat, lng),
   };
 }
 
-export async function fetchOverpassVenues(
-  midpoint: Coordinate,
-  radiusM: number,
-  categories: VenueCategory[],
+async function fetchOverpassFromEndpoint(
+  endpoint: string,
+  query: string,
   signal?: AbortSignal,
 ) {
-  const query = buildOverpassQuery(midpoint, radiusM, categories);
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
+      Accept: "application/json",
       "Content-Type": "text/plain;charset=UTF-8",
     },
     body: query,
@@ -161,13 +181,35 @@ export async function fetchOverpassVenues(
   });
 
   if (!response.ok) {
-    throw new Error(`Overpass search failed with status ${response.status}`);
+    throw new Error(`Overpass search failed at ${endpoint} with status ${response.status}`);
   }
 
-  const payload = (await response.json()) as OverpassResponse;
-  const elements = payload.elements ?? [];
+  return (await response.json()) as OverpassResponse;
+}
 
-  return elements
-    .map((element) => normalizeOverpassVenue(element, midpoint))
-    .filter((venue): venue is Venue => venue !== null);
+export async function fetchOverpassVenues(
+  midpoint: Coordinate,
+  radiusM: number,
+  categories: VenueCategory[],
+  signal?: AbortSignal,
+) {
+  const query = buildOverpassQuery(midpoint, radiusM, categories);
+  const errors: string[] = [];
+
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const payload = await fetchOverpassFromEndpoint(endpoint, query, signal);
+      const elements = payload.elements ?? [];
+
+      return elements
+        .map((element) => normalizeOverpassVenue(element, midpoint))
+        .filter((venue): venue is Venue => venue !== null);
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : `Overpass search failed at ${endpoint}`);
+    }
+  }
+
+  throw new Error(
+    `OpenStreetMap Overpass search failed across all endpoints. ${errors.join(" | ")}`,
+  );
 }
