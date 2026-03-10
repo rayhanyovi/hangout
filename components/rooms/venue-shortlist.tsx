@@ -11,10 +11,12 @@ type VenueShortlistProps = {
   venues: RankedVenue[];
   activeCategories: VenueCategory[];
   onToggleCategory: (category: VenueCategory) => void;
+  onSelectVenue: (venueId: string) => void;
   isLoading: boolean;
   errorMessage: string | null;
   categories: VenueCategory[];
   hasMidpoint: boolean;
+  selectedVenueId: string | null;
 };
 
 const CATEGORY_LABELS: Record<VenueCategory, string> = {
@@ -29,10 +31,12 @@ export function VenueShortlist({
   venues,
   activeCategories,
   onToggleCategory,
+  onSelectVenue,
   isLoading,
   errorMessage,
   categories,
   hasMidpoint,
+  selectedVenueId,
 }: VenueShortlistProps) {
   const filteredVenues = filterRankedVenues(venues, activeCategories);
 
@@ -100,10 +104,18 @@ export function VenueShortlist({
         {filteredVenues.map((venue) => (
           <div
             key={venue.venueId}
-            className="rounded-[1.3rem] border border-line bg-white/80 p-4"
+            className={`rounded-[1.3rem] border p-4 transition ${
+              selectedVenueId === venue.venueId
+                ? "border-foreground bg-white shadow-[0_14px_34px_rgba(31,27,23,0.12)]"
+                : "border-line bg-white/80"
+            }`}
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
+              <button
+                type="button"
+                onClick={() => onSelectVenue(venue.venueId)}
+                className="min-w-0 flex-1 text-left"
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-foreground">
                     {venue.name}
@@ -111,6 +123,11 @@ export function VenueShortlist({
                   <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
                     {CATEGORY_LABELS[venue.category]}
                   </span>
+                  {selectedVenueId === venue.venueId ? (
+                    <span className="rounded-full bg-foreground px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                      focused
+                    </span>
+                  ) : null}
                 </div>
                 {venue.address ? (
                   <p className="mt-2 flex items-center gap-1 text-xs text-muted">
@@ -144,7 +161,7 @@ export function VenueShortlist({
                     ))}
                   </div>
                 ) : null}
-              </div>
+              </button>
 
               <a
                 href={venue.mapUrl}

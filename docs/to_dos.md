@@ -50,7 +50,7 @@ Checklist convention:
 - [x] Implement privacy-aware location input flows
 - [x] Implement midpoint computation and fairness summary
 - [x] Implement venue retrieval, scoring, filtering, and list rendering
-- [ ] Implement the map experience with members, midpoint, radius, and venues
+- [x] Implement the map experience with members, midpoint, radius, and venues
 - [ ] Implement shareable room links with real join codes
 - [ ] Implement voting, vote updates, and host finalization
 - [ ] Implement finalized decision summary and deep links to maps

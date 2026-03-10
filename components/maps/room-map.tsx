@@ -18,6 +18,7 @@ type RoomMapProps = {
   venues?: RoomMapVenue[];
   midpoint?: Coordinate | null;
   radiusM?: number;
+  selectedVenueId?: string | null;
 };
 
 const LeafletRoomMapClient = dynamic(

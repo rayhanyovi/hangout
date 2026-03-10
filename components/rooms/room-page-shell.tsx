@@ -41,6 +41,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
   const [venues, setVenues] = useState<RankedVenue[]>([]);
   const [isVenueLoading, setIsVenueLoading] = useState(false);
   const [venueError, setVenueError] = useState<string | null>(null);
+  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [activeVenueCategories, setActiveVenueCategories] = useState<
     VenueCategory[]
   >([]);
@@ -197,6 +198,19 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
     requestedTagParam,
   ]);
 
+  useEffect(() => {
+    if (venues.length === 0) {
+      setSelectedVenueId(null);
+      return;
+    }
+
+    setSelectedVenueId((current) =>
+      current && venues.some((venue) => venue.venueId === current)
+        ? current
+        : venues[0]?.venueId ?? null,
+    );
+  }, [venues]);
+
   return (
     <main className="grain min-h-screen px-6 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -328,6 +342,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
               members={mappedMembers}
               midpoint={midpoint}
               radiusM={draftSeed.radiusMDefault}
+              selectedVenueId={selectedVenueId}
               venues={venues.map((venue) => ({
                 id: venue.venueId,
                 name: venue.name,
@@ -399,10 +414,12 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                 venues={venues}
                 activeCategories={activeVenueCategories}
                 onToggleCategory={handleToggleVenueCategory}
+                onSelectVenue={setSelectedVenueId}
                 isLoading={isVenueLoading}
                 errorMessage={venueError}
                 categories={availableVenueFilters}
                 hasMidpoint={midpoint !== null}
+                selectedVenueId={selectedVenueId}
               />
             </div>
           </div>
