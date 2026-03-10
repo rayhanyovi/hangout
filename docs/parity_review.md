@@ -46,5 +46,5 @@ The root app now exceeds the prototype with:
 
 - Root parity is strong enough that `/my-idea-app` is no longer the active implementation source
 - The remaining live-room parity gaps from the prototype have now been closed in the root app
-- `/my-idea-app` should stay available as reference material until durable persistence and final cutover sign-off are complete
-- Durable production persistence remains a separate cutover blocker even though it is beyond prototype parity itself
+- Durable PostgreSQL persistence now exists for deployments that set `DATABASE_URL` and apply `db/schema.sql`
+- `/my-idea-app` should stay available as reference material until final cutover sign-off is complete

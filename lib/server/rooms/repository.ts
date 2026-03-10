@@ -1,276 +1,40 @@
 import "server-only";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import crypto from "node:crypto";
-import {
-  applyPrivacyModeToLocation,
-  getRoomDecisionRoute,
-  getRoomRoute,
-  transitionRoomState,
-  type CastVoteOutput,
-  type CreateRoomInput,
-  type CreateRoomOutput,
-  type FinalizeRoomOutput,
-  type GetRoomSnapshotOutput,
-  type JoinRoomInput,
-  type JoinRoomOutput,
-  type Member,
-  type MemberLocation,
-  type Midpoint,
-  type Room,
-  type RoomSnapshot,
-  type UpdateMemberLocationOutput,
-  type Venue,
-  type Vote,
+import type {
+  CastVoteOutput,
+  CreateRoomInput,
+  CreateRoomOutput,
+  FinalizeRoomOutput,
+  GetRoomSnapshotOutput,
+  JoinRoomInput,
+  JoinRoomOutput,
+  MemberLocation,
+  UpdateMemberLocationOutput,
+  Venue,
 } from "@/lib/contracts";
-import { buildMidpointFairnessSummary } from "@/lib/rooms";
-import { LOCATION_RETENTION_POLICY } from "@/lib/contracts/privacy";
-import { serverEnv } from "@/lib/server/config/env";
-import { trackAnalyticsEvent } from "@/lib/server/observability/logger";
+import { isPostgresConfigured } from "@/lib/server/db/client";
+import * as fileRepository from "@/lib/server/rooms/file-repository";
+import * as postgresRepository from "@/lib/server/rooms/postgres-repository";
 
-type RoomStoreFile = {
-  rooms: Room[];
-  members: Member[];
-  votes: Vote[];
-  venuesCache: Array<{
-    roomId: string;
-    venues: Venue[];
-    updatedAt: string;
-  }>;
-};
-
-const ROOM_STORE_DIRECTORY =
-  serverEnv.HANGOUT_ROOM_STORE_DIR ?? path.join(tmpdir(), "hangout");
-const ROOM_STORE_FILE = path.join(ROOM_STORE_DIRECTORY, "room-store.json");
-const EMPTY_ROOM_STORE: RoomStoreFile = {
-  rooms: [],
-  members: [],
-  votes: [],
-  venuesCache: [],
-};
-const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-async function ensureStoreFile() {
-  await mkdir(ROOM_STORE_DIRECTORY, { recursive: true });
-
-  try {
-    await readFile(ROOM_STORE_FILE, "utf8");
-  } catch {
-    await writeFile(ROOM_STORE_FILE, JSON.stringify(EMPTY_ROOM_STORE, null, 2), "utf8");
-  }
-}
-
-async function readStore() {
-  await ensureStoreFile();
-
-  const contents = await readFile(ROOM_STORE_FILE, "utf8");
-  const parsed = JSON.parse(contents) as Partial<RoomStoreFile>;
-
-  return pruneExpiredRooms({
-    rooms: parsed.rooms ?? [],
-    members: parsed.members ?? [],
-    votes: parsed.votes ?? [],
-    venuesCache: parsed.venuesCache ?? [],
-  });
-}
-
-async function writeStore(store: RoomStoreFile) {
-  await ensureStoreFile();
-  await writeFile(ROOM_STORE_FILE, JSON.stringify(store, null, 2), "utf8");
-}
-
-function pruneExpiredRooms(store: RoomStoreFile) {
-  const now = Date.now();
-  const activeRooms = store.rooms.filter(
-    (room) => new Date(room.expiresAt).getTime() > now,
-  );
-  const activeRoomIds = new Set(activeRooms.map((room) => room.roomId));
-
-  return {
-    rooms: activeRooms,
-    members: store.members.filter((member) => activeRoomIds.has(member.roomId)),
-    votes: store.votes.filter((vote) => activeRoomIds.has(vote.roomId)),
-    venuesCache: store.venuesCache.filter((cache) => activeRoomIds.has(cache.roomId)),
-  };
-}
-
-function buildSnapshot(store: RoomStoreFile, room: Room): RoomSnapshot {
-  return {
-    room,
-    members: store.members.filter((member) => member.roomId === room.roomId),
-    venues:
-      store.venuesCache.find((cache) => cache.roomId === room.roomId)?.venues ?? [],
-    votes: store.votes.filter((vote) => vote.roomId === room.roomId),
-  };
-}
-
-function computePersistedMidpoint(members: Member[]): Midpoint | null {
-  const locatedMembers = members
-    .filter((member): member is Member & { location: MemberLocation } => member.location !== null)
-    .map((member) => ({
-      id: member.memberId,
-      name: member.displayName,
-      lat: member.location.lat,
-      lng: member.location.lng,
-    }));
-
-  const fairnessSummary = buildMidpointFairnessSummary(locatedMembers);
-
-  if (!fairnessSummary.midpoint) {
-    return null;
-  }
-
-  return {
-    ...fairnessSummary.midpoint,
-    method: "geometric_median",
-    computedAt: new Date().toISOString(),
-    fairness: fairnessSummary.rows.map((row) => ({
-      memberId: row.id,
-      distanceKm: row.distanceKm,
-    })),
-  };
-}
-
-function generateJoinCode(existingJoinCodes: Set<string>) {
-  let candidate = "";
-
-  do {
-    candidate = Array.from({ length: 6 }, () => {
-      const index = crypto.randomInt(0, JOIN_CODE_ALPHABET.length);
-      return JOIN_CODE_ALPHABET[index];
-    }).join("");
-  } while (existingJoinCodes.has(candidate));
-
-  return candidate;
-}
-
-function createRoomRecord(
-  input: CreateRoomInput,
-  joinCode: string,
-  hostMemberId: string,
-): Room {
-  const createdAt = new Date().toISOString();
-  const expiresAt = new Date(
-    Date.now() + LOCATION_RETENTION_POLICY.roomTtlHours * 60 * 60 * 1000,
-  ).toISOString();
-
-  return {
-    roomId: crypto.randomUUID(),
-    joinCode,
-    title: input.title,
-    createdAt,
-    expiresAt,
-    createdByMemberId: hostMemberId,
-    transportMode: input.transportMode,
-    privacyMode: input.privacyMode,
-    venuePreferences: input.venuePreferences,
-    midpoint: null,
-    finalizedDecision: null,
-    status: "open",
-  };
-}
-
-function createMemberRecord(
-  roomId: string,
-  displayName: string,
-  role: Member["role"],
-): Member {
-  const nowIso = new Date().toISOString();
-
-  return {
-    memberId: crypto.randomUUID(),
-    roomId,
-    displayName,
-    role,
-    joinedAt: nowIso,
-    lastActiveAt: nowIso,
-    location: null,
-  };
+function getRepository() {
+  return isPostgresConfigured() ? postgresRepository : fileRepository;
 }
 
 export async function createRoom(
   input: CreateRoomInput,
   origin: string,
 ): Promise<CreateRoomOutput> {
-  const store = await readStore();
-  const joinCode = generateJoinCode(new Set(store.rooms.map((room) => room.joinCode)));
-  const hostMember = createMemberRecord("pending-room", input.hostDisplayName, "host");
-  const room = createRoomRecord(input, joinCode, hostMember.memberId);
-  const persistedHostMember = {
-    ...hostMember,
-    roomId: room.roomId,
-  };
-
-  const nextStore = {
-    ...store,
-    rooms: [...store.rooms, room],
-    members: [...store.members, persistedHostMember],
-  };
-
-  await writeStore(nextStore);
-  trackAnalyticsEvent("room_created", {
-    roomId: room.roomId,
-    joinCode: room.joinCode,
-    hostMemberId: persistedHostMember.memberId,
-    privacyMode: room.privacyMode,
-    transportMode: room.transportMode,
-    venueCategoryCount: room.venuePreferences.categories.length,
-  });
-
-  return {
-    room,
-    hostMember: persistedHostMember,
-    shareUrl: `${origin}${getRoomRoute(room.joinCode)}`,
-  };
+  return getRepository().createRoom(input, origin);
 }
 
 export async function joinRoom(input: JoinRoomInput): Promise<JoinRoomOutput> {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === input.joinCode);
-
-  if (!room) {
-    throw new Error("Room not found.");
-  }
-
-  if (room.status !== "open") {
-    throw new Error("Room is not open for new members.");
-  }
-
-  const member = createMemberRecord(room.roomId, input.displayName, "member");
-  const nextStore = {
-    ...store,
-    members: [...store.members, member],
-  };
-
-  await writeStore(nextStore);
-  trackAnalyticsEvent("room_joined", {
-    roomId: room.roomId,
-    joinCode: room.joinCode,
-    memberId: member.memberId,
-    role: member.role,
-    memberCount: nextStore.members.filter((candidate) => candidate.roomId === room.roomId).length,
-  });
-
-  return {
-    room,
-    member,
-    snapshot: buildSnapshot(nextStore, room),
-  };
+  return getRepository().joinRoom(input);
 }
 
 export async function getRoomSnapshot(
   joinCode: string,
 ): Promise<GetRoomSnapshotOutput | null> {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
-
-  if (!room) {
-    return null;
-  }
-
-  return buildSnapshot(store, room);
+  return getRepository().getRoomSnapshot(joinCode);
 }
 
 export async function updateMemberLocation(
@@ -278,98 +42,11 @@ export async function updateMemberLocation(
   memberId: string,
   location: MemberLocation,
 ): Promise<UpdateMemberLocationOutput> {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
-
-  if (!room) {
-    throw new Error("Room not found.");
-  }
-
-  const memberExists = store.members.some(
-    (member) => member.memberId === memberId && member.roomId === room.roomId,
-  );
-
-  if (!memberExists) {
-    throw new Error("Member not found.");
-  }
-
-  const nextMembers = store.members.map((member) =>
-    member.memberId === memberId && member.roomId === room.roomId
-      ? {
-          ...member,
-          lastActiveAt: new Date().toISOString(),
-          location: applyPrivacyModeToLocation(location, room.privacyMode),
-        }
-      : member,
-  );
-  const roomMembers = nextMembers.filter((member) => member.roomId === room.roomId);
-  const midpoint = computePersistedMidpoint(roomMembers);
-  const nextRooms = store.rooms.map((candidate) =>
-    candidate.roomId === room.roomId
-      ? {
-          ...candidate,
-          midpoint,
-        }
-      : candidate,
-  );
-  const nextRoom = nextRooms.find((candidate) => candidate.roomId === room.roomId);
-
-  if (!nextRoom) {
-    throw new Error("Room update failed.");
-  }
-
-  const nextStore = {
-    ...store,
-    rooms: nextRooms,
-    members: nextMembers,
-  };
-
-  await writeStore(nextStore);
-  trackAnalyticsEvent("member_location_updated", {
-    roomId: room.roomId,
-    joinCode: room.joinCode,
-    memberId,
-    privacyMode: room.privacyMode,
-    locatedMemberCount: roomMembers.filter((member) => member.location !== null).length,
-    midpointReady: midpoint !== null,
-  });
-
-  return {
-    snapshot: buildSnapshot(nextStore, nextRoom),
-  };
+  return getRepository().updateMemberLocation(joinCode, memberId, location);
 }
 
-export async function setRoomVenueCache(
-  joinCode: string,
-  venues: Venue[],
-) {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
-
-  if (!room) {
-    throw new Error("Room not found.");
-  }
-
-  const nextCacheEntry = {
-    roomId: room.roomId,
-    venues,
-    updatedAt: new Date().toISOString(),
-  };
-  const existingCacheIndex = store.venuesCache.findIndex(
-    (cache) => cache.roomId === room.roomId,
-  );
-  const nextVenueCache = [...store.venuesCache];
-
-  if (existingCacheIndex >= 0) {
-    nextVenueCache[existingCacheIndex] = nextCacheEntry;
-  } else {
-    nextVenueCache.push(nextCacheEntry);
-  }
-
-  await writeStore({
-    ...store,
-    venuesCache: nextVenueCache,
-  });
+export async function setRoomVenueCache(joinCode: string, venues: Venue[]) {
+  return getRepository().setRoomVenueCache(joinCode, venues);
 }
 
 export async function castVote(
@@ -379,78 +56,13 @@ export async function castVote(
   reaction?: string,
   comment?: string,
 ): Promise<CastVoteOutput> {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
-
-  if (!room) {
-    throw new Error("Room not found.");
-  }
-
-  if (room.status !== "open") {
-    throw new Error("Room is not open for voting.");
-  }
-
-  const member = store.members.find(
-    (candidate) => candidate.memberId === memberId && candidate.roomId === room.roomId,
-  );
-
-  if (!member) {
-    throw new Error("Member not found.");
-  }
-
-  const cachedVenues =
-    store.venuesCache.find((cache) => cache.roomId === room.roomId)?.venues ?? [];
-  const venueExists = cachedVenues.some((venue) => venue.venueId === venueId);
-
-  if (!venueExists) {
-    throw new Error("Venue is not available in the current room shortlist.");
-  }
-
-  const existingVote = store.votes.find(
-    (vote) => vote.roomId === room.roomId && vote.memberId === memberId,
-  );
-  const nowIso = new Date().toISOString();
-  const vote: Vote = existingVote
-    ? {
-        ...existingVote,
-        venueId,
-        reaction,
-        comment,
-        updatedAt: nowIso,
-      }
-    : {
-        voteId: crypto.randomUUID(),
-        roomId: room.roomId,
-        memberId,
-        venueId,
-        reaction,
-        comment,
-        updatedAt: nowIso,
-      };
-
-  const nextVotes = existingVote
-    ? store.votes.map((candidate) =>
-        candidate.voteId === existingVote.voteId ? vote : candidate,
-      )
-    : [...store.votes, vote];
-  const nextStore = {
-    ...store,
-    votes: nextVotes,
-  };
-
-  await writeStore(nextStore);
-  trackAnalyticsEvent("vote_cast", {
-    roomId: room.roomId,
-    joinCode: room.joinCode,
+  return getRepository().castVote(
+    joinCode,
     memberId,
     venueId,
-    totalVotes: nextVotes.filter((candidate) => candidate.roomId === room.roomId).length,
-  });
-
-  return {
-    vote,
-    snapshot: buildSnapshot(nextStore, room),
-  };
+    reaction,
+    comment,
+  );
 }
 
 export async function finalizeRoom(
@@ -459,67 +71,5 @@ export async function finalizeRoom(
   venueId: string,
   origin: string,
 ): Promise<FinalizeRoomOutput> {
-  const store = await readStore();
-  const room = store.rooms.find((candidate) => candidate.joinCode === joinCode);
-
-  if (!room) {
-    throw new Error("Room not found.");
-  }
-
-  if (room.createdByMemberId !== memberId) {
-    throw new Error("Only the host can finalize the room.");
-  }
-
-  const cachedVenues =
-    store.venuesCache.find((cache) => cache.roomId === room.roomId)?.venues ?? [];
-  const venueExists = cachedVenues.some((venue) => venue.venueId === venueId);
-
-  if (!venueExists) {
-    throw new Error("Venue is not available in the current room shortlist.");
-  }
-
-  const transition = transitionRoomState(room.status, "venue_finalized", {
-    actorMemberId: memberId,
-    venueId,
-    nowIso: new Date().toISOString(),
-  });
-  const decision = {
-    roomId: room.roomId,
-    venueId,
-    finalizedByMemberId: memberId,
-    finalizedAt: transition.finalizedAt ?? new Date().toISOString(),
-    shareUrl: `${origin}${getRoomDecisionRoute(joinCode)}`,
-  };
-  const nextRooms = store.rooms.map((candidate) =>
-    candidate.roomId === room.roomId
-      ? {
-          ...candidate,
-          status: transition.status,
-          finalizedDecision: decision,
-        }
-      : candidate,
-  );
-  const nextRoom = nextRooms.find((candidate) => candidate.roomId === room.roomId);
-
-  if (!nextRoom) {
-    throw new Error("Room finalization failed.");
-  }
-
-  const nextStore = {
-    ...store,
-    rooms: nextRooms,
-  };
-
-  await writeStore(nextStore);
-  trackAnalyticsEvent("room_finalized", {
-    roomId: room.roomId,
-    joinCode: room.joinCode,
-    finalizedByMemberId: memberId,
-    venueId,
-  });
-
-  return {
-    decision,
-    snapshot: buildSnapshot(nextStore, nextRoom),
-  };
+  return getRepository().finalizeRoom(joinCode, memberId, venueId, origin);
 }

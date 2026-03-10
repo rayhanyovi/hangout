@@ -17,17 +17,18 @@ This file records the current Vercel deployment posture for the root Next.js app
 - All current API routes are Node.js routes and should stay on the Node runtime
 - Venue search depends on an external Overpass provider and benefits from cancellation, runtime cache, and rate limiting
 - Structured server logs are emitted to stdout/stderr and are expected to surface in Vercel logs
-- Region pinning is intentionally not hardcoded yet; the production region should be chosen to match the eventual primary PostgreSQL region
+- Region pinning is intentionally not hardcoded yet; the production region should be chosen to match the primary PostgreSQL region
 
-## Important Limitation Before True Production Cutover
+## Durable Persistence Requirement
 
-- The current room persistence layer is still a temporary file-backed store under the runtime filesystem
-- That storage model is not durable across Vercel deployments or serverless instance churn
-- Production cutover still requires replacing the temporary store with PostgreSQL or another durable persistence layer
+- Set `DATABASE_URL` in Vercel project environment variables for any shared preview or production deployment
+- Apply `db/schema.sql` before first traffic with `npm run db:push` or the equivalent SQL execution flow in your database provider
+- If `DATABASE_URL` is omitted, the app falls back to a temporary runtime file store; that fallback is acceptable for local development but not for durable Vercel environments
 
 ## Deployment Checklist
 
 1. Set up the Vercel project against the root app, not `/my-idea-app`
 2. Keep the package manager as `npm`
-3. Add any optional env overrides only through Vercel project environment variables
-4. Do not treat the deployment as durable production until the persistence layer is upgraded
+3. Provision PostgreSQL, set `DATABASE_URL`, and apply `db/schema.sql`
+4. Add any remaining optional env overrides only through Vercel project environment variables
+5. Verify room create, join, vote, and finalize flows against the deployed database before production cutover

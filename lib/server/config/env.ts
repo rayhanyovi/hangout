@@ -8,6 +8,7 @@ const booleanFlagSchema = z
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
+  DATABASE_URL: z.string().trim().min(1).optional(),
   HANGOUT_ROOM_STORE_DIR: z.string().trim().min(1).optional(),
   HANGOUT_ENABLE_STRUCTURED_LOGS: booleanFlagSchema,
   HANGOUT_VENUE_CACHE_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(120),

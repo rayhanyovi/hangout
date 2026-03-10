@@ -20,11 +20,11 @@ This repository currently contains two separate app states:
 - Reference app: a Lovable export in `/my-idea-app` built with Vite + React + TypeScript
 - Root TypeScript and ESLint validation are now scoped to the production app, not the Lovable reference folder
 - The root Next.js app now covers the active MVP path: create room, join room, share location, compute midpoint and fairness, retrieve venue candidates, vote, finalize, and render a decision summary
-- Room persistence is still backed by a temporary JSON store in the OS temp directory; PostgreSQL remains the intended production persistence target
+- Room persistence now supports durable PostgreSQL storage when `DATABASE_URL` is configured, with the temporary JSON store kept only as a local fallback
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
-- A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, but durable persistence is still the remaining blocker for a true production cutover
+- A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
 - The Lovable export is now reference-only for parity review and migration checks, not the primary working app
 
@@ -35,9 +35,11 @@ The root production app now follows this baseline structure:
 - `app/` for route entries and layout boundaries
 - `components/marketing/` for reusable presentation components used by route shells
 - `components/maps/` for client-only Leaflet map boundaries used by App Router routes
+- `db/` for the checked-in PostgreSQL schema used by durable room persistence
 - `lib/contracts/` for shared data contracts that can be used across client and server boundaries
 - `lib/server/` for server-only integrations and orchestration logic
 - `lib/math/`, `lib/venues/`, and `lib/validation/` for shared feature utilities
+- `scripts/` for operational helpers such as schema application
 - foundation packages for validation, map rendering, UI utilities, and testing are installed in the root app
 
 This is only the initial scaffold. Feature-specific folders will be added once route contracts and data contracts are frozen.
@@ -93,14 +95,13 @@ Current architecture in the Lovable export:
 
 Important product requirements that are still missing:
 
-- Durable production persistence with PostgreSQL, migrations, and TTL cleanup outside the temporary file store
 - Transport-aware routing or ETA-based fairness; current fairness still uses geometric distance only
 - Address search / pin-on-map flow beyond raw latitude and longitude input
-- Production-grade observability, analytics, and operational logging
-- Environment hardening, deployment assumptions, and final Vercel rollout work
+- Automated database migrations and scheduled TTL cleanup beyond the current request-driven expiry pruning
+- Environment hardening, deployment assumptions, and final Vercel rollout sign-off
 - Final parity review and removal of `/my-idea-app` after cutover confidence is high
 
-In short: `my-idea-app` is a useful interaction prototype, not an MVP-complete production app.
+In short: `my-idea-app` is still useful reference material, but the root app now holds the MVP-complete implementation path.
 
 ## Audit Findings
 
@@ -130,7 +131,7 @@ Recommended target shape for the production app:
 
 - Persistence layer: PostgreSQL as the system of record for rooms, members, votes, and venue cache metadata
 - Persistence access: server-only repository layer
-- Expiry handling: room rows carry `expires_at`, with scheduled cleanup every 15 minutes
+- Expiry handling: room rows carry `expires_at`, with request-driven pruning today and room for scheduled cleanup later
 - Venue search boundary: server-only Overpass adapter with 120-second room-scoped cache and stale-cache fallback on provider failure
 - Midpoint orchestration: recompute on location and fairness input changes, then persist the latest midpoint snapshot on the room
 - Realtime strategy: 4-second polling for MVP, with explicit refresh events and a later upgrade path to realtime transport

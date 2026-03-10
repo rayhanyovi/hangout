@@ -2,8 +2,8 @@
 
 ## Scope
 
-The root Next.js app currently has no required custom environment variables to boot locally.
-All custom variables below are optional runtime overrides for server behavior.
+The root Next.js app can still boot locally with no custom environment variables.
+For durable shared persistence, set `DATABASE_URL` so room data lives in PostgreSQL instead of the temporary file fallback.
 
 ## Platform Variables
 
@@ -16,13 +16,17 @@ These are usually supplied by Node.js or Vercel:
 
 Current optional server variables:
 
+- `DATABASE_URL`
+  Default: unset
+  When present, room persistence uses PostgreSQL for rooms, members, votes, and venue cache instead of the fallback temp-file store. Apply `db/schema.sql` with `npm run db:push` before first use.
+
 - `HANGOUT_ENABLE_STRUCTURED_LOGS`
   Default: `true`
   Controls whether structured analytics and operational logs are emitted from server routes and repositories.
 
 - `HANGOUT_ROOM_STORE_DIR`
   Default: OS temp directory + `/hangout`
-  Overrides the temporary file-backed room store path used by the current MVP persistence layer.
+  Overrides the fallback file-backed room store path used only when `DATABASE_URL` is not configured.
 
 - `HANGOUT_VENUE_CACHE_TTL_SECONDS`
   Default: `120`
@@ -43,11 +47,14 @@ Current optional server variables:
 ## Local Development
 
 1. Copy `.env.example` to `.env.local` only if you need custom overrides.
-2. Keep real secrets out of git-tracked env files.
-3. Use `npm run dev` for local development after env changes.
+2. If you want durable room persistence locally, set `DATABASE_URL` and run `npm run db:push`.
+3. If `DATABASE_URL` is omitted, the app falls back to a temporary JSON room store under the OS temp directory.
+4. Keep real secrets out of git-tracked env files.
+5. Use `npm run dev` for local development after env changes.
 
 ## Current Notes
 
 - There are no `NEXT_PUBLIC_` variables in use yet.
-- The current room persistence layer is temporary and file-backed, so `HANGOUT_ROOM_STORE_DIR` is mainly for local development, CI, or containerized runtimes.
+- Vercel production deployments should treat `DATABASE_URL` as required even though the local fallback store still exists.
+- `HANGOUT_ROOM_STORE_DIR` is now mainly for local development, CI, or test environments that intentionally skip PostgreSQL.
 - Venue cache and rate limit values are best-effort in-memory controls in the Node.js runtime, not a shared distributed cache.
