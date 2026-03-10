@@ -53,7 +53,7 @@ Checklist convention:
 - [x] Implement the map experience with members, midpoint, radius, and venues
 - [x] Implement shareable room links with real join codes
 - [x] Implement voting, vote updates, and host finalization
-- [ ] Implement finalized decision summary and deep links to maps
+- [x] Implement finalized decision summary and deep links to maps
 
 ## Production Readiness
 
