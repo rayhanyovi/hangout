@@ -7,12 +7,14 @@ import {
   getRoomDecisionRoute,
   getRoomRoute,
   type MemberLocation,
+  type RoomSnapshot,
   type VenueCategory,
 } from "@/lib/contracts";
 import {
   buildDraftRoomMembers,
   buildMidpointFairnessSummary,
   createPendingDraftRoomMember,
+  mapSnapshotMembersToDraftMembers,
   memberHasLocation,
   type DraftRoomMember,
   type DraftRoomSeed,
@@ -21,10 +23,15 @@ import {
 import { RoomMap } from "@/components/maps/room-map";
 import { RoomMemberManager } from "@/components/rooms/room-member-manager";
 import { VenueShortlist } from "@/components/rooms/venue-shortlist";
+import { JoinRoomInline } from "@/components/rooms/join-room-inline";
 
 type RoomPageShellProps = {
   joinCode: string;
   draftSeed: DraftRoomSeed;
+  initialMembers?: DraftRoomMember[];
+  liveRoomContext?: {
+    currentMemberId: string | null;
+  };
 };
 
 type VenueSearchResponse = {
@@ -32,11 +39,22 @@ type VenueSearchResponse = {
   message?: string;
 };
 
+type RoomUpdateResponse = {
+  snapshot: RoomSnapshot;
+  message?: string;
+};
+
 const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
 
-export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
-  const [members, setMembers] = useState<DraftRoomMember[]>(() =>
-    buildDraftRoomMembers(draftSeed),
+export function RoomPageShell({
+  joinCode,
+  draftSeed,
+  initialMembers,
+  liveRoomContext,
+}: RoomPageShellProps) {
+  const isLiveRoom = liveRoomContext !== undefined;
+  const [members, setMembers] = useState<DraftRoomMember[]>(
+    () => initialMembers ?? buildDraftRoomMembers(draftSeed),
   );
   const [venues, setVenues] = useState<RankedVenue[]>([]);
   const [isVenueLoading, setIsVenueLoading] = useState(false);
@@ -45,6 +63,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
   const [activeVenueCategories, setActiveVenueCategories] = useState<
     VenueCategory[]
   >([]);
+  const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
 
   const mappedMembers = useMemo(
     () =>
@@ -82,23 +101,58 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
       ),
     [requestedVenueCategories, venues],
   );
+  const currentMemberId = liveRoomContext?.currentMemberId ?? null;
+  const viewerHasJoined =
+    !isLiveRoom ||
+    (currentMemberId !== null &&
+      members.some((member) => member.id === currentMemberId));
 
   const inviteLink = getRoomRoute(joinCode);
 
   const handleAddMember = (displayName: string) => {
+    if (isLiveRoom) {
+      return;
+    }
+
     setMembers((current) => [...current, createPendingDraftRoomMember(displayName)]);
   };
 
   const handleRemoveMember = (memberId: string) => {
+    if (isLiveRoom) {
+      return;
+    }
+
     setMembers((current) =>
       current.filter((member) => member.id !== memberId || member.role === "host"),
     );
   };
 
-  const handleUpdateMemberLocation = (
+  const handleUpdateMemberLocation = async (
     memberId: string,
     location: MemberLocation,
   ) => {
+    if (!isLiveRoom) {
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === memberId
+            ? {
+                ...member,
+                location,
+                statusLabel:
+                  location.source === "gps"
+                    ? "Shared from current device"
+                    : "Pinned manually in the room shell",
+              }
+            : member,
+        ),
+      );
+      return;
+    }
+
+    if (!currentMemberId || currentMemberId !== memberId) {
+      return;
+    }
+
     setMembers((current) =>
       current.map((member) =>
         member.id === memberId
@@ -113,6 +167,31 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
           : member,
       ),
     );
+
+    try {
+      const response = await fetch(`/api/rooms/${joinCode}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memberId,
+          location,
+        }),
+      });
+      const payload = (await response.json()) as RoomUpdateResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? "Location update failed.");
+      }
+
+      setMembers(mapSnapshotMembersToDraftMembers(payload.snapshot));
+      setRoomSyncError(null);
+    } catch (error) {
+      setRoomSyncError(
+        error instanceof Error ? error.message : "Location update failed.",
+      );
+    }
   };
 
   const handleToggleVenueCategory = (category: VenueCategory) => {
@@ -128,6 +207,54 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
       return [...current, category];
     });
   };
+
+  useEffect(() => {
+    if (!isLiveRoom) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncRoomSnapshot = async () => {
+      try {
+        const response = await fetch(`/api/rooms/${joinCode}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as
+          | RoomSnapshot
+          | {
+              message?: string;
+            };
+
+        if (!response.ok) {
+          const errorPayload = payload as { message?: string };
+          throw new Error(errorPayload.message ?? "Room sync failed.");
+        }
+        const snapshot = payload as RoomSnapshot;
+
+        if (!cancelled) {
+          setMembers(mapSnapshotMembersToDraftMembers(snapshot));
+          setRoomSyncError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRoomSyncError(
+            error instanceof Error ? error.message : "Room sync failed.",
+          );
+        }
+      }
+    };
+
+    void syncRoomSnapshot();
+    const interval = window.setInterval(() => {
+      void syncRoomSnapshot();
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [isLiveRoom, joinCode]);
 
   useEffect(() => {
     if (midpointLat === null || midpointLng === null) {
@@ -219,7 +346,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 <span className="h-2 w-2 rounded-full bg-teal" />
-                {draftSeed.previewMode ? "Preview room shell" : "Room shell"}
+                {draftSeed.previewMode ? "Preview room shell" : "Live room"}
               </div>
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
@@ -250,7 +377,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
                   href="/rooms/new"
                   className="flex-1 rounded-full border border-line bg-surface px-4 py-3 text-center font-semibold transition hover:-translate-y-0.5"
                 >
-                  Edit setup
+                  {isLiveRoom ? "New room" : "Edit setup"}
                 </Link>
                 <Link
                   href={getRoomDecisionRoute(joinCode)}
@@ -285,7 +412,7 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
               {
                 icon: TimerReset,
                 label: "Flow mode",
-                value: draftSeed.previewMode ? "draft preview" : "server state",
+                value: draftSeed.previewMode ? "draft preview" : "persisted room",
               },
             ].map((item) => (
               <div
@@ -304,12 +431,24 @@ export function RoomPageShell({ joinCode, draftSeed }: RoomPageShellProps) {
           </div>
         </header>
 
+        {isLiveRoom && !viewerHasJoined ? (
+          <JoinRoomInline initialJoinCode={joinCode} compact />
+        ) : null}
+
+        {roomSyncError ? (
+          <div className="rounded-[1.4rem] border border-coral/30 bg-coral/8 px-5 py-4 text-sm text-coral">
+            {roomSyncError}
+          </div>
+        ) : null}
+
         <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="space-y-6">
             <RoomMemberManager
               inviteLink={inviteLink}
               members={members}
               privacyMode={draftSeed.privacyMode}
+              mode={isLiveRoom ? "live" : "preview"}
+              currentMemberId={currentMemberId}
               onAddMember={handleAddMember}
               onRemoveMember={handleRemoveMember}
               onUpdateMemberLocation={handleUpdateMemberLocation}

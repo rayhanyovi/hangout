@@ -25,9 +25,14 @@ type RoomMemberManagerProps = {
   inviteLink: string;
   members: DraftRoomMember[];
   privacyMode: PrivacyMode;
-  onAddMember: (displayName: string) => void;
-  onRemoveMember: (memberId: string) => void;
-  onUpdateMemberLocation: (memberId: string, location: MemberLocation) => void;
+  mode?: "preview" | "live";
+  currentMemberId?: string | null;
+  onAddMember?: (displayName: string) => void;
+  onRemoveMember?: (memberId: string) => void;
+  onUpdateMemberLocation: (
+    memberId: string,
+    location: MemberLocation,
+  ) => void | Promise<void>;
 };
 
 const displayNameSchema = joinRoomSchema.shape.displayName;
@@ -37,6 +42,8 @@ export function RoomMemberManager({
   inviteLink,
   members,
   privacyMode,
+  mode = "preview",
+  currentMemberId = null,
   onAddMember,
   onRemoveMember,
   onUpdateMemberLocation,
@@ -51,8 +58,13 @@ export function RoomMemberManager({
   const sharedCount = members.filter((member) => member.location !== null).length;
   const pendingCount = members.length - sharedCount;
   const privacyRule = PRIVACY_RULES[privacyMode];
+  const isLiveMode = mode === "live";
 
   const handleAddMember = () => {
+    if (!onAddMember) {
+      return;
+    }
+
     const parsed = displayNameSchema.safeParse(pendingName.trim());
 
     if (!parsed.success) {
@@ -65,7 +77,7 @@ export function RoomMemberManager({
     setPendingName("");
   };
 
-  const saveLocation = (
+  const saveLocation = async (
     memberId: string,
     locationInput: {
       lat: number;
@@ -90,7 +102,7 @@ export function RoomMemberManager({
     }
 
     setError(null);
-    onUpdateMemberLocation(memberId, parsed.data);
+    await onUpdateMemberLocation(memberId, parsed.data);
     return true;
   };
 
@@ -103,8 +115,8 @@ export function RoomMemberManager({
     setLoadingMemberId(memberId);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        saveLocation(memberId, {
+      async (position) => {
+        await saveLocation(memberId, {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           source: "gps",
@@ -130,7 +142,7 @@ export function RoomMemberManager({
     setManualLng(member.location ? String(member.location.lng) : "");
   };
 
-  const handleManualSave = (memberId: string) => {
+  const handleManualSave = async (memberId: string) => {
     const lat = Number(manualLat);
     const lng = Number(manualLng);
 
@@ -139,7 +151,7 @@ export function RoomMemberManager({
       return;
     }
 
-    const success = saveLocation(memberId, {
+    const success = await saveLocation(memberId, {
       lat,
       lng,
       source: "pinned",
@@ -197,41 +209,55 @@ export function RoomMemberManager({
         <p className="mt-2 break-all rounded-xl bg-surface px-3 py-2 font-mono text-xs text-foreground">
           {inviteLink}
         </p>
+        <p className="mt-3 text-xs text-muted">
+          {isLiveMode
+            ? "Roster bertambah saat orang join lewat link atau join code ini."
+            : "Preview mode masih mengizinkan host menambah slot member secara lokal."}
+        </p>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Add member
-          </span>
-          <input
-            value={pendingName}
-            onChange={(event) => setPendingName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                handleAddMember();
-              }
-            }}
-            placeholder="Type a member name"
-            className="w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={handleAddMember}
-          className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add
-        </button>
-      </div>
+      {!isLiveMode ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Add member
+            </span>
+            <input
+              value={pendingName}
+              onChange={(event) => setPendingName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleAddMember();
+                }
+              }}
+              placeholder="Type a member name"
+              className="w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleAddMember}
+            className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5"
+          >
+            <Plus className="h-4 w-4" />
+            Add
+          </button>
+        </div>
+      ) : (
+        <p className="mt-5 text-sm leading-7 text-muted">
+          Live room mode membatasi update lokasi ke member yang sedang masuk
+          dari device ini.
+        </p>
+      )}
 
       {error ? <p className="mt-3 text-sm font-medium text-coral">{error}</p> : null}
 
       <div className="mt-5 space-y-3">
         {members.map((member) => {
           const locationLocked = member.id === "invite-slot";
+          const canUpdateThisMember =
+            !isLiveMode || (currentMemberId !== null && member.id === currentMemberId);
 
           return (
             <div
@@ -247,6 +273,11 @@ export function RoomMemberManager({
                     <span className="rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
                       {member.role}
                     </span>
+                    {currentMemberId === member.id ? (
+                      <span className="rounded-full bg-foreground px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-background">
+                        you
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-2 text-sm text-ink-soft">{member.statusLabel}</p>
                   {member.location ? (
@@ -263,27 +294,33 @@ export function RoomMemberManager({
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onRemoveMember(member.id)}
-                  disabled={member.role === "host"}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:border-coral hover:text-coral disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label={`Remove ${member.displayName}`}
-                  title={
-                    member.role === "host"
-                      ? "Host stays in the room"
-                      : `Remove ${member.displayName}`
-                  }
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {!isLiveMode ? (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveMember?.(member.id)}
+                    disabled={member.role === "host"}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:border-coral hover:text-coral disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={`Remove ${member.displayName}`}
+                    title={
+                      member.role === "host"
+                        ? "Host stays in the room"
+                        : `Remove ${member.displayName}`
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                ) : null}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => handleCurrentLocation(member.id)}
-                  disabled={loadingMemberId === member.id || locationLocked}
+                  disabled={
+                    loadingMemberId === member.id ||
+                    locationLocked ||
+                    !canUpdateThisMember
+                  }
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loadingMemberId === member.id ? (
@@ -296,7 +333,7 @@ export function RoomMemberManager({
                 <button
                   type="button"
                   onClick={() => startManualEdit(member)}
-                  disabled={locationLocked}
+                  disabled={locationLocked || !canUpdateThisMember}
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <MapPinned className="h-3.5 w-3.5" />
@@ -307,6 +344,12 @@ export function RoomMemberManager({
               {locationLocked ? (
                 <p className="mt-3 text-xs text-muted">
                   Invite slot stays passive until a real member joins.
+                </p>
+              ) : null}
+
+              {isLiveMode && !canUpdateThisMember ? (
+                <p className="mt-3 text-xs text-muted">
+                  Tiap member update lokasinya sendiri dari device mereka.
                 </p>
               ) : null}
 
@@ -324,7 +367,7 @@ export function RoomMemberManager({
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
-                        handleManualSave(member.id);
+                        void handleManualSave(member.id);
                       }
                     }}
                     placeholder="Longitude"
@@ -332,7 +375,7 @@ export function RoomMemberManager({
                   />
                   <button
                     type="button"
-                    onClick={() => handleManualSave(member.id)}
+                    onClick={() => void handleManualSave(member.id)}
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
                   >
                     <Check className="h-4 w-4" />

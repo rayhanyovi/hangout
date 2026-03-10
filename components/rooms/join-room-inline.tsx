@@ -3,18 +3,26 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
-import { getRoomRoute } from "@/lib/contracts";
+import { getRoomRoute, type JoinRoomOutput } from "@/lib/contracts";
 import { joinRoomSchema } from "@/lib/validation";
-import { serializeDraftRoomSearchParams } from "@/lib/rooms";
 
-export function JoinRoomInline() {
+type JoinRoomInlineProps = {
+  initialJoinCode?: string;
+  compact?: boolean;
+};
+
+export function JoinRoomInline({
+  initialJoinCode = "",
+  compact = false,
+}: JoinRoomInlineProps) {
   const router = useRouter();
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState(initialJoinCode);
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsed = joinRoomSchema.safeParse({
@@ -28,22 +36,41 @@ export function JoinRoomInline() {
     }
 
     setError(null);
+    setIsSubmitting(true);
 
-    const query = serializeDraftRoomSearchParams({
-      title: null,
-      hostDisplayName: "Host",
-      guestDisplayName: parsed.data.displayName,
-      transportMode: "motor",
-      privacyMode: "approximate",
-      categories: [],
-      tags: [],
-      radiusMDefault: 2000,
-      previewMode: true,
-    });
+    try {
+      const response = await fetch("/api/rooms/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(parsed.data),
+      });
+      const payload = (await response.json()) as
+        | JoinRoomOutput
+        | {
+            message?: string;
+          };
 
-    startTransition(() => {
-      router.push(`${getRoomRoute(parsed.data.joinCode)}?${query.toString()}`);
-    });
+      if (!response.ok) {
+        const errorPayload = payload as { message?: string };
+        throw new Error(errorPayload.message ?? "Join request failed.");
+      }
+      const output = payload as JoinRoomOutput;
+
+      startTransition(() => {
+        router.push(
+          `${getRoomRoute(output.room.joinCode)}?member=${output.member.memberId}`,
+        );
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Join request failed.",
+      );
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -53,25 +80,30 @@ export function JoinRoomInline() {
     >
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Search className="h-4 w-4" />
-        Join existing room
+        {compact ? "Join this room" : "Join existing room"}
       </div>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Punya room code? Masuk langsung ke shell room untuk lanjut lihat alur
-        koordinasinya.
+        {compact
+          ? "Masuk sebagai member untuk share lokasi dari device kamu sendiri."
+          : "Punya room code? Masuk langsung ke room yang sama untuk lanjut koordinasi."}
       </p>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Join code
-          </span>
-          <input
-            value={joinCode}
-            onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-            placeholder="ABCD12"
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-semibold tracking-[0.2em] text-foreground outline-none transition focus:border-coral"
-          />
-        </label>
+      <div
+        className={`mt-5 grid gap-3 ${compact ? "sm:grid-cols-[1fr_auto]" : "sm:grid-cols-[1fr_1fr_auto]"}`}
+      >
+        {!compact ? (
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Join code
+            </span>
+            <input
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+              placeholder="ABCD12"
+              className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-semibold tracking-[0.2em] text-foreground outline-none transition focus:border-coral"
+            />
+          </label>
+        ) : null}
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
             Nama
@@ -85,17 +117,22 @@ export function JoinRoomInline() {
         </label>
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
           className="inline-flex items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? "Opening..." : <ArrowRight className="h-4 w-4" />}
+          {isPending || isSubmitting ? "Opening..." : <ArrowRight className="h-4 w-4" />}
         </button>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
-        Saat ini join flow masih membuka shell room preview sampai persistence
-        backend aktif.
-      </p>
+      {compact ? (
+        <p className="mt-3 text-xs text-muted">
+          Join code <span className="font-mono text-foreground">{initialJoinCode}</span> akan dipakai otomatis.
+        </p>
+      ) : (
+        <p className="mt-3 text-xs text-muted">
+          Join flow sekarang memakai room API nyata dan langsung masuk ke room yang sama.
+        </p>
+      )}
 
       {error ? (
         <p className="mt-3 text-sm font-medium text-coral">{error}</p>

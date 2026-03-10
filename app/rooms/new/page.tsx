@@ -44,9 +44,9 @@ export default function NewRoomPage() {
                 Current phase
               </p>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Submit form sekarang akan membuka room shell preview memakai
-                draft seed di URL. Persistence backend dan server create-room API
-                menyusul di task berikutnya.
+                Submit form sekarang sudah membuat room persisted dengan join
+                code nyata. Host langsung diarahkan ke room yang sama dan link
+                `/r/[joinCode]` bisa dibagikan ke member lain.
               </p>
             </div>
           </div>

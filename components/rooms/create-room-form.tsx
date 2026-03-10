@@ -3,9 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
-import { getRoomRoute } from "@/lib/contracts";
+import { getRoomRoute, type CreateRoomOutput } from "@/lib/contracts";
 import { createRoomSchema } from "@/lib/validation";
-import { createDraftJoinCode, serializeDraftRoomSearchParams } from "@/lib/rooms";
 
 const CATEGORY_OPTIONS = [
   { value: "cafe", label: "Cafe" },
@@ -36,6 +35,7 @@ export function CreateRoomForm() {
   const [budget, setBudget] = useState<"low" | "mid" | "high" | undefined>("mid");
   const [tagsInput, setTagsInput] = useState("wifi, cozy");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const parsedTags = useMemo(
@@ -55,7 +55,7 @@ export function CreateRoomForm() {
     );
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsed = createRoomSchema.safeParse({
@@ -77,23 +77,41 @@ export function CreateRoomForm() {
     }
 
     setError(null);
+    setIsSubmitting(true);
 
-    const joinCode = createDraftJoinCode();
-    const query = serializeDraftRoomSearchParams({
-      title: parsed.data.title,
-      hostDisplayName: parsed.data.hostDisplayName,
-      transportMode: parsed.data.transportMode,
-      privacyMode: parsed.data.privacyMode,
-      categories: parsed.data.venuePreferences.categories,
-      tags: parsed.data.venuePreferences.tags,
-      budget: parsed.data.venuePreferences.budget,
-      radiusMDefault: parsed.data.venuePreferences.radiusMDefault,
-      previewMode: true,
-    });
+    try {
+      const response = await fetch("/api/rooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(parsed.data),
+      });
+      const payload = (await response.json()) as
+        | CreateRoomOutput
+        | {
+            message?: string;
+          };
 
-    startTransition(() => {
-      router.push(`${getRoomRoute(joinCode)}?${query.toString()}`);
-    });
+      if (!response.ok) {
+        const errorPayload = payload as { message?: string };
+        throw new Error(errorPayload.message ?? "Room creation failed.");
+      }
+      const output = payload as CreateRoomOutput;
+
+      startTransition(() => {
+        router.push(
+          `${getRoomRoute(output.room.joinCode)}?member=${output.hostMember.memberId}`,
+        );
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Room creation failed.",
+      );
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -281,9 +299,9 @@ export function CreateRoomForm() {
           </div>
 
           <div className="rounded-[1.5rem] border border-dashed border-line bg-surface p-4 text-sm leading-6 text-muted">
-            Flow ini sudah memakai validasi kontrak root app. Saat submit,
-            form akan membuka room shell preview dengan draft seed sampai API
-            create-room server side dihubungkan.
+            Flow ini sudah memakai validasi kontrak root app dan room API
+            persisted. Saat submit, host langsung masuk ke live room dengan
+            join code nyata.
           </div>
         </div>
       </div>
@@ -298,10 +316,10 @@ export function CreateRoomForm() {
         </p>
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
           className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? "Opening room..." : "Preview room shell"}
+          {isPending || isSubmitting ? "Opening room..." : "Create room"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
