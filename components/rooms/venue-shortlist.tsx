@@ -11,10 +11,13 @@ type VenueShortlistProps = {
   venues: RankedVenue[];
   activeCategories: VenueCategory[];
   onToggleCategory: (category: VenueCategory) => void;
+  onSelectRadius: (radiusM: number) => void;
   onSelectVenue: (venueId: string) => void;
   isLoading: boolean;
   errorMessage: string | null;
   categories: VenueCategory[];
+  radiusM: number;
+  radiusOptions: number[];
   hasMidpoint: boolean;
   selectedVenueId: string | null;
 };
@@ -31,10 +34,13 @@ export function VenueShortlist({
   venues,
   activeCategories,
   onToggleCategory,
+  onSelectRadius,
   onSelectVenue,
   isLoading,
   errorMessage,
   categories,
+  radiusM,
+  radiusOptions,
   hasMidpoint,
   selectedVenueId,
 }: VenueShortlistProps) {
@@ -49,16 +55,39 @@ export function VenueShortlist({
           </p>
           <p className="mt-2 text-sm leading-7 text-muted">
             Venue candidates are now retrieved from the server search boundary
-            and ranked by distance, category fit, and matched tags.
+            and ranked by distance, category fit, and matched tags. Radius and
+            category controls below now refresh the live shortlist.
           </p>
         </div>
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted" /> : null}
       </div>
 
+      <div className="mt-5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+          Search radius
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {radiusOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onSelectRadius(option)}
+              className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                radiusM === option
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-line bg-white/80 text-muted"
+              }`}
+            >
+              {option >= 1000 ? `${option / 1000} km` : `${option} m`}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-5 flex flex-wrap gap-2">
         <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filter
+          Live categories
         </div>
         {categories.map((category) => {
           const active =
@@ -91,6 +120,13 @@ export function VenueShortlist({
         <p className="mt-5 text-sm leading-7 text-muted">
           Venue retrieval starts after at least two members have shared a
           location and the midpoint is available.
+        </p>
+      ) : null}
+
+      {hasMidpoint && activeCategories.length === 0 ? (
+        <p className="mt-5 text-sm leading-7 text-muted">
+          Tidak ada kategori spesifik yang dipilih, jadi shortlist sekarang
+          mencari semua kategori venue yang tersedia.
         </p>
       ) : null}
 

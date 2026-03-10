@@ -6,6 +6,7 @@ import { Compass, MapPinned, ShieldCheck, TimerReset } from "lucide-react";
 import {
   getRoomDecisionRoute,
   getRoomRoute,
+  VENUE_CATEGORIES,
   type MemberLocation,
   type RoomSnapshot,
   type Vote,
@@ -58,6 +59,7 @@ type AsyncStatus = "idle" | "loading" | "success" | "timeout" | "error";
 
 const DEFAULT_PREVIEW_CATEGORIES: VenueCategory[] = ["cafe", "restaurant"];
 const ROOM_ACTION_TIMEOUT_MS = 10000;
+const ROOM_RADIUS_OPTIONS = [500, 1000, 2000, 3000, 5000] as const;
 
 export function RoomPageShell({
   joinCode,
@@ -75,7 +77,12 @@ export function RoomPageShell({
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [activeVenueCategories, setActiveVenueCategories] = useState<
     VenueCategory[]
-  >([]);
+  >(() =>
+    draftSeed.categories.length > 0
+      ? draftSeed.categories
+      : DEFAULT_PREVIEW_CATEGORIES,
+  );
+  const [searchRadiusM, setSearchRadiusM] = useState(draftSeed.radiusMDefault);
   const [roomSyncError, setRoomSyncError] = useState<string | null>(null);
   const [roomSyncStatus, setRoomSyncStatus] = useState<AsyncStatus>(
     isLiveRoom ? "loading" : "success",
@@ -112,17 +119,11 @@ export function RoomPageShell({
         : DEFAULT_PREVIEW_CATEGORIES,
     [draftSeed.categories],
   );
-  const requestedCategoryParam = requestedVenueCategories.join(",");
+  const searchCategoryParam = activeVenueCategories.join(",");
   const requestedTagParam = draftSeed.tags.join(",");
-  const availableVenueFilters = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...requestedVenueCategories,
-          ...venues.map((venue) => venue.category),
-        ]),
-      ),
-    [requestedVenueCategories, venues],
+  const searchCategoryOptions = useMemo(
+    () => VENUE_CATEGORIES.filter((category) => category !== "other"),
+    [],
   );
   const currentMemberId = liveRoomContext?.currentMemberId ?? null;
   const hostMemberId =
@@ -464,8 +465,8 @@ export function RoomPageShell({
     const params = new URLSearchParams({
       lat: String(midpointLat),
       lng: String(midpointLng),
-      radiusM: String(draftSeed.radiusMDefault),
-      categories: requestedCategoryParam,
+      radiusM: String(searchRadiusM),
+      categories: searchCategoryParam,
       tags: requestedTagParam,
       limit: "8",
     });
@@ -527,9 +528,9 @@ export function RoomPageShell({
   }, [
     midpointLat,
     midpointLng,
-    draftSeed.radiusMDefault,
+    searchRadiusM,
     draftSeed.budget,
-    requestedCategoryParam,
+    searchCategoryParam,
     requestedTagParam,
     isLiveRoom,
     joinCode,
@@ -616,9 +617,9 @@ export function RoomPageShell({
                 icon: MapPinned,
                 label: "Radius",
                 value:
-                  draftSeed.radiusMDefault >= 1000
-                    ? `${draftSeed.radiusMDefault / 1000} km`
-                    : `${draftSeed.radiusMDefault} m`,
+                  searchRadiusM >= 1000
+                    ? `${searchRadiusM / 1000} km`
+                    : `${searchRadiusM} m`,
               },
               {
                 icon: TimerReset,
@@ -766,6 +767,10 @@ export function RoomPageShell({
                   ? `Soft tags: ${draftSeed.tags.join(", ")}.`
                   : "Soft tags belum dipasang; venue shortlist akan mulai dari kategori inti."}
               </p>
+              <p className="mt-3 text-sm leading-7 text-muted">
+                Live room sekarang bisa mengubah radius dan kategori pencarian
+                langsung dari shortlist tanpa kembali ke host setup.
+              </p>
             </article>
           </div>
 
@@ -773,7 +778,7 @@ export function RoomPageShell({
             <RoomMap
               members={mappedMembers}
               midpoint={midpoint}
-              radiusM={draftSeed.radiusMDefault}
+              radiusM={searchRadiusM}
               selectedVenueId={selectedVenueId}
               venues={venues.map((venue) => ({
                 id: venue.venueId,
@@ -847,10 +852,13 @@ export function RoomPageShell({
                   venues={venues}
                   activeCategories={activeVenueCategories}
                   onToggleCategory={handleToggleVenueCategory}
+                  onSelectRadius={setSearchRadiusM}
                   onSelectVenue={setSelectedVenueId}
                   isLoading={isVenueLoading}
                   errorMessage={venueError}
-                  categories={availableVenueFilters}
+                  categories={searchCategoryOptions}
+                  radiusM={searchRadiusM}
+                  radiusOptions={[...ROOM_RADIUS_OPTIONS]}
                   hasMidpoint={midpoint !== null}
                   selectedVenueId={selectedVenueId}
                 />

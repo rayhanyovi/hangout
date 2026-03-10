@@ -40,12 +40,11 @@ The root app now exceeds the prototype with:
 
 ## Remaining Differences
 
-- The prototype exposes a live radius selector directly on the main room flow; the root app currently keeps radius in room setup and does not let members adjust it from `/r/[joinCode]`
-- The prototype can refetch venues from the room page using active category toggles; the root app currently treats room categories as setup-time input and uses category chips mostly as shortlist filters
 - The prototype falls back to random demo coordinates when geolocation fails; the root app intentionally does not replicate that behavior because it is not acceptable for production
 
 ## Conclusion
 
 - Root parity is strong enough that `/my-idea-app` is no longer the active implementation source
-- `/my-idea-app` should stay available as reference material until the remaining live-room parity choices are either implemented in root or explicitly dropped
+- The remaining live-room parity gaps from the prototype have now been closed in the root app
+- `/my-idea-app` should stay available as reference material until durable persistence and final cutover sign-off are complete
 - Durable production persistence remains a separate cutover blocker even though it is beyond prototype parity itself

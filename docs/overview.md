@@ -25,6 +25,7 @@ This repository currently contains two separate app states:
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, but durable persistence is still the remaining blocker for a true production cutover
+- The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`
 - The Lovable export is now reference-only for parity review and migration checks, not the primary working app
 
 ## Root App Structure
