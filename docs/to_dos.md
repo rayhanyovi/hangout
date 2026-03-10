@@ -29,7 +29,7 @@ Checklist convention:
 
 ## Backend And Data
 
-- [ ] Choose the persistence layer for rooms, members, votes, and TTL cleanup
+- [x] Choose the persistence layer for rooms, members, votes, and TTL cleanup
 - [ ] Design server APIs or server actions for room create/join/update flows
 - [ ] Design the venue search server boundary, including caching and provider failure handling
 - [ ] Define how midpoint computation will be triggered and stored

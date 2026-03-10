@@ -119,6 +119,12 @@ Recommended target shape for the production app:
 - Room state, member state, midpoint state, and voting state become explicit persisted entities
 - Deployment target remains Vercel, with environment variables and provider limits handled in root app architecture
 
+## Backend Decisions
+
+- Persistence layer: PostgreSQL as the system of record for rooms, members, votes, and venue cache metadata
+- Persistence access: server-only repository layer
+- Expiry handling: room rows carry `expires_at`, with scheduled cleanup every 15 minutes
+
 ## Working Assumption For Future Tasks
 
 Treat `/my-idea-app` as a design and logic reference, not as code to harden in place. The main job is to rebuild the product properly in the root Next.js app, using the prototype only where it meaningfully accelerates parity.
