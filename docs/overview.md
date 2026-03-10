@@ -44,6 +44,15 @@ The MVP route map is now frozen to these paths:
 
 This route map intentionally keeps the shared room flow on one stable room URL, with a separate finalized summary route after the venue is locked.
 
+## Shared Contracts Baseline
+
+The root app now has a first stable domain contract layer in `lib/contracts/` covering:
+
+- domain entities for room, member, location, midpoint, venue, vote, and finalized decision
+- route helpers for MVP URL generation
+
+These contracts are intended to stay stable while UI and server implementation iterate around them. Room state transitions and privacy policy helpers are defined next as separate contract tasks.
+
 ## What Exists In `my-idea-app`
 
 Implemented prototype capabilities:

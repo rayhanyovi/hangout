@@ -23,7 +23,7 @@ Checklist convention:
 ## Product Contracts
 
 - [x] Freeze the MVP route map for the Next.js app
-- [ ] Define stable TypeScript contracts for room, member, location, midpoint, venue, vote, and finalized decision
+- [x] Define stable TypeScript contracts for room, member, location, midpoint, venue, vote, and finalized decision
 - [ ] Define the room state machine: open, finalized, expired
 - [ ] Define privacy and retention rules in implementation terms
 
