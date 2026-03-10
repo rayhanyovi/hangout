@@ -33,6 +33,17 @@ The root production app now follows this baseline structure:
 
 This is only the initial scaffold. Feature-specific folders will be added once route contracts and data contracts are frozen.
 
+## MVP Route Map
+
+The MVP route map is now frozen to these paths:
+
+- `/` for landing page and product framing
+- `/rooms/new` for host setup and room creation
+- `/r/[joinCode]` for the live room experience: join, location, midpoint, venues, voting, and finalization
+- `/r/[joinCode]/decision` for finalized decision output and maps handoff
+
+This route map intentionally keeps the shared room flow on one stable room URL, with a separate finalized summary route after the venue is locked.
+
 ## What Exists In `my-idea-app`
 
 Implemented prototype capabilities:
