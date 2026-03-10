@@ -262,6 +262,7 @@ export function RoomMemberManager({
           return (
             <div
               key={member.id}
+              data-testid={`member-card-${member.id}`}
               className="rounded-[1.4rem] border border-line bg-white/78 p-4"
             >
               <div className="flex items-start justify-between gap-4">
@@ -316,6 +317,7 @@ export function RoomMemberManager({
                 <button
                   type="button"
                   onClick={() => handleCurrentLocation(member.id)}
+                  data-testid={`member-use-current-location-${member.id}`}
                   disabled={
                     loadingMemberId === member.id ||
                     locationLocked ||
@@ -333,6 +335,7 @@ export function RoomMemberManager({
                 <button
                   type="button"
                   onClick={() => startManualEdit(member)}
+                  data-testid={`member-enter-coordinates-${member.id}`}
                   disabled={locationLocked || !canUpdateThisMember}
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-foreground transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -356,12 +359,14 @@ export function RoomMemberManager({
               {editingMemberId === member.id ? (
                 <div className="mt-4 grid gap-3 rounded-[1.2rem] border border-line bg-surface p-4 sm:grid-cols-[1fr_1fr_auto_auto]">
                   <input
+                    data-testid={`member-latitude-${member.id}`}
                     value={manualLat}
                     onChange={(event) => setManualLat(event.target.value)}
                     placeholder="Latitude"
                     className="rounded-2xl border border-line bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-coral"
                   />
                   <input
+                    data-testid={`member-longitude-${member.id}`}
                     value={manualLng}
                     onChange={(event) => setManualLng(event.target.value)}
                     onKeyDown={(event) => {
@@ -376,6 +381,7 @@ export function RoomMemberManager({
                   <button
                     type="button"
                     onClick={() => void handleManualSave(member.id)}
+                    data-testid={`member-save-location-${member.id}`}
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-teal px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
                   >
                     <Check className="h-4 w-4" />

@@ -23,6 +23,7 @@ This repository now has one active application state:
 - Expired room cleanup now has a dedicated authenticated cron route and Vercel schedule, not only request-driven pruning
 - Venue search now runs behind a server-only Overpass boundary with runtime caching, stale fallback, and per-room rate limiting
 - Core room APIs and venue search now emit structured server logs for analytics and operational troubleshooting
+- Local browser-level smoke coverage now exists for the create, join, location share, vote, finalize, and decision flow via Playwright
 - Mobile MVP routes have been checked at `320px` and `390px` widths with no horizontal overflow on `/`, `/rooms/new`, and `/r/[joinCode]`
 - A Vercel deployment baseline now exists in `vercel.json` and `docs/vercel_deployment.md`, and durable persistence is available once `DATABASE_URL` and `db/schema.sql` are applied
 - The live room flow now includes parity controls for radius adjustment and live category-driven venue refetch directly from `/r/[joinCode]`

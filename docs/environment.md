@@ -28,6 +28,10 @@ Current optional server variables:
   Default: `true`
   Controls whether structured analytics and operational logs are emitted from server routes and repositories.
 
+- `HANGOUT_USE_FIXTURE_VENUES`
+  Default: `false`
+  Test-only switch that makes the venue search boundary return deterministic local fixtures instead of calling Overpass. The Playwright smoke suite enables this automatically.
+
 - `HANGOUT_ROOM_STORE_DIR`
   Default: OS temp directory + `/hangout`
   Overrides the fallback file-backed room store path used only when `DATABASE_URL` is not configured.

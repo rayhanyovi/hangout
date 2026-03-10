@@ -140,6 +140,7 @@ export function VenueShortlist({
         {filteredVenues.map((venue) => (
           <div
             key={venue.venueId}
+            data-testid={`venue-card-${venue.venueId}`}
             className={`rounded-[1.3rem] border p-4 transition ${
               selectedVenueId === venue.venueId
                 ? "border-foreground bg-white shadow-[0_14px_34px_rgba(31,27,23,0.12)]"

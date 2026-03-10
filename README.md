@@ -21,6 +21,8 @@ Buka [http://localhost:3000](http://localhost:3000).
 - `npm run build`
 - `npm run start`
 - `npm run lint`
+- `npm run test`
+- `npm run test:e2e`
 
 ## Project References
 

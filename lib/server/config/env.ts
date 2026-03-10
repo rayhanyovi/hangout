@@ -5,6 +5,11 @@ const booleanFlagSchema = z
   .default("true")
   .transform((value) => value === "true");
 
+const disabledByDefaultBooleanFlagSchema = z
+  .enum(["true", "false"])
+  .default("false")
+  .transform((value) => value === "true");
+
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
@@ -12,6 +17,7 @@ const serverEnvSchema = z.object({
   CRON_SECRET: z.string().trim().min(16).optional(),
   HANGOUT_ROOM_STORE_DIR: z.string().trim().min(1).optional(),
   HANGOUT_ENABLE_STRUCTURED_LOGS: booleanFlagSchema,
+  HANGOUT_USE_FIXTURE_VENUES: disabledByDefaultBooleanFlagSchema,
   HANGOUT_VENUE_CACHE_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(120),
   HANGOUT_VENUE_STALE_TTL_SECONDS: z.coerce.number().int().min(60).max(7200).default(360),
   HANGOUT_VENUE_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().min(5).max(300).default(30),

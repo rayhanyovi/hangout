@@ -1,5 +1,6 @@
-import type { BudgetLevel, Coordinate, VenueCategory } from "@/lib/contracts";
+import type { BudgetLevel, Coordinate, Venue, VenueCategory } from "@/lib/contracts";
 import { fetchOverpassVenues } from "@/lib/venues";
+import { haversineKm } from "@/lib/math";
 import { rankVenuesForRoom, type RankedVenue } from "@/lib/rooms";
 import { serverEnv } from "@/lib/server/config/env";
 
@@ -166,6 +167,61 @@ function consumeRateLimit(
   };
 }
 
+function buildFixtureVenues(midpoint: Coordinate): Venue[] {
+  const fixtureCoordinates = [
+    {
+      venueId: "kopi-tengah",
+      providerId: "fixture-kopi-tengah",
+      name: "Kopi Tengah",
+      category: "cafe" as const,
+      address: "Jl. Jend. Sudirman No. 10, Jakarta",
+      rating: 4.7,
+      priceLevel: 2,
+      openNow: true,
+      tags: ["wifi", "cozy", "coffee"],
+      mapUrl: "https://maps.example.com/kopi-tengah",
+      lat: midpoint.lat + 0.0012,
+      lng: midpoint.lng + 0.0011,
+    },
+    {
+      venueId: "green-garden-resto",
+      providerId: "fixture-green-garden-resto",
+      name: "Green Garden Resto",
+      category: "restaurant" as const,
+      address: "Jl. M.H. Thamrin No. 1, Jakarta",
+      rating: 4.5,
+      priceLevel: 2,
+      openNow: true,
+      tags: ["cozy", "group"],
+      mapUrl: "https://maps.example.com/green-garden-resto",
+      lat: midpoint.lat - 0.0015,
+      lng: midpoint.lng + 0.0007,
+    },
+    {
+      venueId: "langsat-park",
+      providerId: "fixture-langsat-park",
+      name: "Langsat Park",
+      category: "park" as const,
+      address: "Jl. Barito, Jakarta",
+      openNow: true,
+      tags: ["outdoor", "group"],
+      mapUrl: "https://maps.example.com/langsat-park",
+      lat: midpoint.lat + 0.0021,
+      lng: midpoint.lng - 0.0018,
+    },
+  ];
+
+  return fixtureCoordinates.map((venue) => ({
+    ...venue,
+    distanceToCenterM: Math.round(
+      haversineKm(midpoint, {
+        lat: venue.lat,
+        lng: venue.lng,
+      }) * 1000,
+    ),
+  }));
+}
+
 async function fetchAndRankVenues({
   midpoint,
   radiusM,
@@ -175,6 +231,19 @@ async function fetchAndRankVenues({
   limit = 8,
   signal,
 }: Omit<SearchRoomVenuesInput, "rateLimitKey">) {
+  if (serverEnv.HANGOUT_USE_FIXTURE_VENUES) {
+    return rankVenuesForRoom(
+      buildFixtureVenues(midpoint),
+      {
+        categories,
+        tags,
+        budget,
+        radiusMDefault: radiusM,
+      },
+      limit,
+    );
+  }
+
   const venues = await fetchOverpassVenues(midpoint, radiusM, categories, signal);
 
   return rankVenuesForRoom(

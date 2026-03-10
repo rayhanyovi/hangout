@@ -138,6 +138,8 @@ export function JoinRoomInline({
         <button
           type="submit"
           disabled={isPending || isSubmitting}
+          aria-label={isPending || isSubmitting ? "Opening room" : "Join room"}
+          data-testid="join-room-submit"
           className="inline-flex items-center justify-center rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isPending || isSubmitting ? "Opening..." : <ArrowRight className="h-4 w-4" />}
